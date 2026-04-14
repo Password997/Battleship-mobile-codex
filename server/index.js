@@ -3,7 +3,7 @@ const http = require("http");
 const cors = require("cors");
 const { Server } = require("socket.io");
 
-const PORT = 4000;
+const PORT = Number(process.env.PORT) || 4000;
 const BOARD_SIZE = 10;
 const SHIP_LENGTHS = [5, 4, 3, 3, 2];
 const ROOM_CODE_LENGTH = 5;
@@ -504,16 +504,10 @@ io.on("connection", (socket) => {
         for (const { shipIndex, ship } of matchingShips) {
           const wasSunkBefore = shipIsSunk(target, ship);
 
-          // Regla final:
-          // si existe al menos una nave enemiga en esta coordenada que siga a flote,
-          // este disparo cuenta como HIT para el jugador actual.
           if (!wasSunkBefore) {
             registeredHitForThisTarget = true;
           }
 
-          // El daño físico del barco sigue siendo compartido.
-          // Repetir la misma celda por otro jugador NO agrega daño nuevo,
-          // pero sí debe seguir contando como HIT mientras la nave no esté hundida.
           const cellKey = keyOf(x, y);
           target.hitsTaken.add(cellKey);
 
