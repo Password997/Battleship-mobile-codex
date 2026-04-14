@@ -1,15 +1,12 @@
 import { io } from "socket.io-client";
 
-const host = window.location.hostname;
-const SERVER_URL = `http://${host}:4000`;
+const SERVER_URL =
+  process.env.REACT_APP_SERVER_URL ||
+  "https://battleship-mobile-production.up.railway.app";
 
 const socket = io(SERVER_URL, {
   autoConnect: true,
-  transports: ["polling", "websocket"],
-  reconnection: true,
-  reconnectionAttempts: Infinity,
-  reconnectionDelay: 500,
-  timeout: 10000,
+  transports: ["websocket", "polling"],
 });
 
 export default socket;
