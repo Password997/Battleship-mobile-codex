@@ -722,7 +722,7 @@ io.on("connection", (socket) => {
   });
 });
 
-const buildPath = path.join(__dirname, "..", "build");
+const buildPath = path.join(process.cwd(), "build");
 const indexPath = path.join(buildPath, "index.html");
 app.use(
   express.static(buildPath, {
@@ -744,4 +744,5 @@ app.get("/{*splat}", (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`SERVER RUNNING ${PORT}`);
+  console.log(`SERVING CLIENT ${indexPath}`);
 });
