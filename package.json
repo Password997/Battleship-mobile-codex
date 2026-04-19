@@ -3,14 +3,19 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
+    "express": "^5.1.0",
+    "http-proxy-middleware": "^3.0.5",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
     "react-scripts": "^5.0.1",
-    "socket.io-client": "^4.8.3",
-    "serve": "^14.2.4"
+    "serve": "^14.2.4",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1"
   },
   "scripts": {
-    "start": "serve -s build -l $PORT",
+    "start": "node server/index.js",
+    "client": "react-scripts start",
+    "server": "node server/index.js",
     "build": "react-scripts build"
   },
   "browserslist": {

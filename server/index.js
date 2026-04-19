@@ -1,614 +1,742 @@
 const express = require("express");
 const http = require("http");
-const cors = require("cors");
+const path = require("path");
 const { Server } = require("socket.io");
 
-const PORT = Number(process.env.PORT) || 4000;
-const BOARD_SIZE = 10;
-const SHIP_LENGTHS = [5, 4, 3, 3, 2];
-const ROOM_CODE_LENGTH = 5;
-
 const app = express();
-app.use(cors());
-app.use(express.json());
-
-app.get("/", (_req, res) => {
-  res.json({ ok: true, server: "battleship", port: PORT });
-});
-
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"],
-  },
-  transports: ["polling", "websocket"],
+  cors: { origin: "*", methods: ["GET", "POST"] },
 });
 
-const rooms = new Map();
+const PORT = process.env.PORT || 4000;
+const BOARD_SIZE = 10;
+const SHIP_LENGTHS = [5, 4, 3, 3, 2];
+const MIN_PLAYERS = 2;
+const MAX_PLAYERS = 10;
+const ROOM_CODE_LENGTH = 4;
+
+const rooms = {};
+
+function makeRoomCode() {
+  const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  let code = "";
+
+  do {
+    code = "";
+    for (let i = 0; i < ROOM_CODE_LENGTH; i += 1) {
+      code += letters[Math.floor(Math.random() * letters.length)];
+    }
+  } while (rooms[code]);
+
+  return code;
+}
 
 function keyOf(x, y) {
   return `${x},${y}`;
 }
 
-function randomRoomCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let code = "";
-  for (let i = 0; i < ROOM_CODE_LENGTH; i += 1) {
-    code += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return code;
+function normalizeRoomCode(roomCode) {
+  return String(roomCode || "").trim().toUpperCase();
 }
 
-function generateUniqueRoomCode() {
-  let code = randomRoomCode();
-  while (rooms.has(code)) {
-    code = randomRoomCode();
-  }
-  return code;
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
 }
 
-function createPlayer(socketId, name, order) {
+function normalizeShips(ships) {
+  if (!Array.isArray(ships)) return null;
+
+  const normalized = ships.map((ship) => {
+    const cells = Array.isArray(ship?.cells) ? ship.cells : ship;
+
+    if (!Array.isArray(cells)) return null;
+
+    return cells.map((cell) => {
+      if (Array.isArray(cell)) {
+        return { x: Number(cell[0]), y: Number(cell[1]) };
+      }
+
+      return { x: Number(cell?.x), y: Number(cell?.y) };
+    });
+  });
+
+  if (normalized.some((ship) => !ship)) return null;
+  return normalized;
+}
+
+function validateShips(ships) {
+  if (!Array.isArray(ships) || ships.length !== SHIP_LENGTHS.length) {
+    return "Place all ships first.";
+  }
+
+  const occupied = new Set();
+
+  for (let i = 0; i < ships.length; i += 1) {
+    const ship = ships[i];
+    const expectedLength = SHIP_LENGTHS[i];
+
+    if (!Array.isArray(ship) || ship.length !== expectedLength) {
+      return `Ship ${i + 1} must be length ${expectedLength}.`;
+    }
+
+    for (const cell of ship) {
+      if (
+        !Number.isInteger(cell.x) ||
+        !Number.isInteger(cell.y) ||
+        cell.x < 0 ||
+        cell.x >= BOARD_SIZE ||
+        cell.y < 0 ||
+        cell.y >= BOARD_SIZE
+      ) {
+        return "Ships must stay inside the board.";
+      }
+
+      const key = keyOf(cell.x, cell.y);
+      if (occupied.has(key)) {
+        return "Ships cannot overlap.";
+      }
+
+      occupied.add(key);
+    }
+
+    const sameRow = ship.every((cell) => cell.y === ship[0].y);
+    const sameColumn = ship.every((cell) => cell.x === ship[0].x);
+    if (!sameRow && !sameColumn) {
+      return "Ships must be straight.";
+    }
+  }
+
+  return "";
+}
+
+function playerLabel(playerName, order) {
+  const initials = String(playerName || "")
+    .trim()
+    .replace(/[^a-z0-9]/gi, "")
+    .slice(0, 3)
+    .toUpperCase();
+
+  return initials ? `P${order} ${initials}` : `P${order}`;
+}
+
+function createPlayer(socket, clientId, playerName, isHost, order) {
   return {
-    id: socketId,
-    name: String(name || `Player ${order}`).trim(),
-    ready: false,
+    id: socket.id,
+    clientId,
+    name: playerLabel(playerName, order),
+    isHost,
     ships: [],
-    hitsTaken: new Set(),
+    hitsTakenKeys: [],
+    missesTakenKeys: [],
+    shotsTaken: [],
+    sunkShipIndexes: [],
     shotHistory: [],
     revealedSunkShipCells: [],
+    ready: false,
     defeated: false,
     connected: true,
   };
 }
 
-function isInsideBoard(x, y) {
-  return Number.isInteger(x) && Number.isInteger(y) && x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE;
+function getCurrentTurnPlayer(room) {
+  if (!room?.order?.length) return null;
+  return room.players[room.order[room.turnIndex]] || null;
 }
 
-function validateShipShape(ship, expectedLength) {
-  if (!Array.isArray(ship) || ship.length !== expectedLength) return false;
-
-  const xs = ship.map((c) => c.x);
-  const ys = ship.map((c) => c.y);
-
-  const sameRow = ys.every((y) => y === ys[0]);
-  const sameCol = xs.every((x) => x === xs[0]);
-
-  if (!sameRow && !sameCol) return false;
-
-  if (sameRow) {
-    const sorted = [...xs].sort((a, b) => a - b);
-    for (let i = 1; i < sorted.length; i += 1) {
-      if (sorted[i] !== sorted[i - 1] + 1) return false;
-    }
-    return true;
-  }
-
-  const sorted = [...ys].sort((a, b) => a - b);
-  for (let i = 1; i < sorted.length; i += 1) {
-    if (sorted[i] !== sorted[i - 1] + 1) return false;
-  }
-  return true;
+function findPlayerByClientId(room, clientId) {
+  if (!room || !clientId) return null;
+  return room.order.map((playerId) => room.players[playerId]).find((player) => {
+    return player?.clientId === clientId;
+  });
 }
 
-function normalizeShips(rawShips) {
-  if (!Array.isArray(rawShips) || rawShips.length !== SHIP_LENGTHS.length) {
-    return { ok: false, error: `You must place exactly ${SHIP_LENGTHS.length} ships.` };
+function reattachPlayer(room, player, socket) {
+  const oldId = player.id;
+  socket.join(room.code);
+
+  if (oldId === socket.id) return player;
+
+  delete room.players[oldId];
+  player.id = socket.id;
+  player.connected = true;
+  room.players[socket.id] = player;
+  room.order = room.order.map((playerId) => (playerId === oldId ? socket.id : playerId));
+
+  if (room.winnerId === oldId) {
+    room.winnerId = socket.id;
   }
 
-  const normalizedShips = [];
-  const usedCells = new Set();
+  return player;
+}
 
-  for (let i = 0; i < SHIP_LENGTHS.length; i += 1) {
-    const expectedLength = SHIP_LENGTHS[i];
-    const rawShip = rawShips[i];
+function advanceTurn(room) {
+  if (!room?.order?.length) return;
 
-    if (!Array.isArray(rawShip) || rawShip.length !== expectedLength) {
-      return { ok: false, error: `Ship ${i + 1} must have length ${expectedLength}.` };
+  for (let i = 0; i < room.order.length; i += 1) {
+    room.turnIndex = (room.turnIndex + 1) % room.order.length;
+    const nextPlayer = room.players[room.order[room.turnIndex]];
+
+    if (nextPlayer && !nextPlayer.defeated) {
+      return;
     }
-
-    const ship = rawShip.map((cell) => ({
-      x: Number(cell.x),
-      y: Number(cell.y),
-    }));
-
-    for (const cell of ship) {
-      if (!isInsideBoard(cell.x, cell.y)) {
-        return { ok: false, error: "All ship cells must be inside the board." };
-      }
-    }
-
-    const uniqueWithinShip = new Set(ship.map((c) => keyOf(c.x, c.y)));
-    if (uniqueWithinShip.size !== ship.length) {
-      return { ok: false, error: "A ship cannot contain duplicate cells." };
-    }
-
-    if (!validateShipShape(ship, expectedLength)) {
-      return { ok: false, error: `Ship ${i + 1} is invalid.` };
-    }
-
-    for (const cell of ship) {
-      const cellKey = keyOf(cell.x, cell.y);
-      if (usedCells.has(cellKey)) {
-        return { ok: false, error: "Ships cannot overlap." };
-      }
-      usedCells.add(cellKey);
-    }
-
-    normalizedShips.push(ship);
   }
-
-  return { ok: true, ships: normalizedShips };
 }
 
-function shipIsSunk(player, ship) {
-  return ship.every((cell) => player.hitsTaken.has(keyOf(cell.x, cell.y)));
+function addMissTaken(player, shotKey) {
+  if (
+    !player.missesTakenKeys.includes(shotKey) &&
+    !player.hitsTakenKeys.includes(shotKey)
+  ) {
+    player.missesTakenKeys.push(shotKey);
+  }
 }
 
-function updatePlayerDefeated(player) {
-  if (!player.ships.length) {
-    player.defeated = false;
+function recordShotTaken(player, x, y, result) {
+  const shotKey = keyOf(x, y);
+  const existing = player.shotsTaken.find((shot) => shot.x === x && shot.y === y);
+
+  if (existing) {
+    existing.result = result;
     return;
   }
 
-  const allCells = player.ships.flat();
-  player.defeated = allCells.every((cell) => player.hitsTaken.has(keyOf(cell.x, cell.y)));
+  player.shotsTaken.push({ x, y, result, key: shotKey });
 }
 
-function alivePlayers(room) {
-  return room.players.filter((p) => !p.defeated);
+function recordSunkShip(player, ship) {
+  for (const cell of ship) {
+    recordShotTaken(player, cell.x, cell.y, "sunk");
+  }
 }
 
-function aliveConnectedPlayers(room) {
-  return room.players.filter((p) => !p.defeated && p.connected);
+function revealSunkShip(room, sunkShip) {
+  for (const playerId of room.order) {
+    const player = room.players[playerId];
+    if (!player) continue;
+
+    const alreadyRevealed = player.revealedSunkShipCells.some((revealed) => {
+      return (
+        revealed.playerId === sunkShip.playerId &&
+        revealed.cells?.every((cell, index) => {
+          const other = sunkShip.cells[index];
+          return other && other.x === cell.x && other.y === cell.y;
+        })
+      );
+    });
+
+    if (!alreadyRevealed) {
+      player.revealedSunkShipCells.push(clone(sunkShip));
+    }
+  }
 }
 
-function getNextAlivePlayerId(room, fromPlayerId) {
-  const players = room.players;
-  if (!players.length) return null;
+function findActiveShipsAt(player, x, y) {
+  const hits = [];
 
-  const preferred = aliveConnectedPlayers(room);
-  const fallback = alivePlayers(room);
-  const eligible = preferred.length ? preferred : fallback;
+  for (let index = 0; index < player.ships.length; index += 1) {
+    if (player.sunkShipIndexes.includes(index)) continue;
 
-  if (!eligible.length) return null;
-
-  const startIndex = players.findIndex((p) => p.id === fromPlayerId);
-  if (startIndex === -1) return eligible[0].id;
-
-  for (let step = 1; step <= players.length; step += 1) {
-    const idx = (startIndex + step) % players.length;
-    const candidate = players[idx];
-    if (!candidate.defeated && (preferred.length ? candidate.connected : true)) {
-      return candidate.id;
+    const ship = player.ships[index];
+    if (ship.some((cell) => cell.x === x && cell.y === y)) {
+      hits.push({ ship, index });
     }
   }
 
-  return eligible[0].id;
+  return hits;
 }
 
-function maybeFinishGame(room) {
-  const alive = alivePlayers(room);
-  if (room.status === "battle" && alive.length <= 1) {
-    room.status = "finished";
-    room.currentTurnPlayerId = null;
-    room.winnerId = alive[0]?.id || null;
-    room.winnerName = alive[0]?.name || null;
-  }
+function isShipSunk(player, ship) {
+  const hits = new Set(player.hitsTakenKeys);
+  return ship.every((cell) => hits.has(keyOf(cell.x, cell.y)));
 }
 
-function buildPlayerView(room, viewerId) {
-  const viewer = room.players.find((p) => p.id === viewerId);
-  if (!viewer) return null;
+function publicPlayers(room) {
+  return room.order
+    .map((playerId) => room.players[playerId])
+    .filter(Boolean)
+    .map((player) => ({
+      id: player.id,
+      name: player.name,
+      isHost: player.isHost,
+      ready: player.ready,
+      defeated: player.defeated,
+      connected: player.connected,
+      shipsLeft: Math.max(0, player.ships.length - player.sunkShipIndexes.length),
+      totalShips: player.ships.length,
+    }));
+}
 
-  const currentTurnPlayer = room.players.find((p) => p.id === room.currentTurnPlayerId);
-
-  const sunkShipIndexes = viewer.ships
-    .map((ship, index) => (shipIsSunk(viewer, ship) ? index : null))
-    .filter((value) => value !== null);
+function buildRoomState(room, viewerId) {
+  const viewer = room.players[viewerId];
+  const currentTurnPlayer = getCurrentTurnPlayer(room);
 
   return {
     roomCode: room.code,
-    status: room.status,
     boardSize: BOARD_SIZE,
-    shipLengths: SHIP_LENGTHS,
-    currentTurnPlayerId: room.currentTurnPlayerId,
-    currentTurnName: currentTurnPlayer?.name || null,
-    isYourTurn: room.status === "battle" && room.currentTurnPlayerId === viewer.id,
-    winnerId: room.winnerId,
-    winnerName: room.winnerName,
-    you: {
-      id: viewer.id,
-      name: viewer.name,
-      ready: viewer.ready,
-      defeated: viewer.defeated,
-      ships: viewer.ships,
-      hitsTakenKeys: [...viewer.hitsTaken],
-      sunkShipIndexes,
-      shotHistory: viewer.shotHistory,
-      revealedSunkShipCells: viewer.revealedSunkShipCells || [],
-    },
-    players: room.players.map((p) => ({
-      id: p.id,
-      name: p.name,
-      ready: p.ready,
-      defeated: p.defeated,
-      alive: !p.defeated,
-      connected: p.connected,
-      isHost: p.id === room.hostId,
-    })),
+    status: room.status,
+    players: publicPlayers(room),
+    currentTurnPlayerId: currentTurnPlayer?.id || "",
+    currentTurnName: currentTurnPlayer?.name || "",
+    isYourTurn:
+      room.status === "battle" && currentTurnPlayer?.id === viewerId && !viewer?.defeated,
+    winnerName: room.winnerId ? room.players[room.winnerId]?.name || "" : "",
+    you: viewer
+      ? {
+          id: viewer.id,
+          name: viewer.name,
+          isHost: viewer.isHost,
+          ready: viewer.ready,
+          defeated: viewer.defeated,
+          ships: clone(viewer.ships),
+          hitsTakenKeys: [...viewer.hitsTakenKeys],
+          missesTakenKeys: [...viewer.missesTakenKeys],
+          shotsTaken: clone(viewer.shotsTaken),
+          sunkShipIndexes: [...viewer.sunkShipIndexes],
+          shotHistory: [...viewer.shotHistory],
+          revealedSunkShipCells: clone(viewer.revealedSunkShipCells),
+        }
+      : null,
   };
 }
 
-function emitRoomState(roomCode) {
-  const room = rooms.get(roomCode);
-  if (!room) return;
-
-  for (const player of room.players) {
-    if (player.connected && io.sockets.sockets.has(player.id)) {
-      const payload = buildPlayerView(room, player.id);
-      if (payload) {
-        io.to(player.id).emit("room_state", payload);
-      }
+function emitRoomState(room) {
+  for (const playerId of room.order) {
+    const playerSocket = io.sockets.sockets.get(playerId);
+    if (playerSocket) {
+      playerSocket.emit("room_state", buildRoomState(room, playerId));
     }
   }
 }
 
-function reassignHostIfNeeded(room, oldHostId) {
-  if (room.hostId !== oldHostId) return;
-  room.hostId =
-    room.players.find((p) => p.connected && !p.defeated)?.id ||
-    room.players.find((p) => p.connected)?.id ||
-    room.players.find((p) => !p.defeated)?.id ||
-    room.players[0]?.id ||
-    null;
+function emitPopup(room, type, items) {
+  io.to(room.code).emit("battle_popup", { type, items });
 }
 
-function removePlayerFromRoom(socketId, hardRemove = true) {
-  for (const [roomCode, room] of rooms.entries()) {
-    const index = room.players.findIndex((p) => p.id === socketId);
-    if (index === -1) continue;
+function removePlayerFromRoom(socket, roomCode, explicitLeave = false) {
+  const room = rooms[roomCode];
+  if (!room || !room.players[socket.id]) return;
 
-    const player = room.players[index];
+  const player = room.players[socket.id];
+  socket.leave(roomCode);
 
-    if (hardRemove) {
-      room.players.splice(index, 1);
-      reassignHostIfNeeded(room, socketId);
+  if (room.status === "finished" && explicitLeave) {
+    delete room.players[socket.id];
+    room.order = room.order.filter((playerId) => playerId !== socket.id);
 
-      if (!room.players.length) {
-        rooms.delete(roomCode);
-        return;
-      }
-
-      if (room.status === "battle" && room.currentTurnPlayerId === socketId) {
-        room.currentTurnPlayerId = getNextAlivePlayerId(room, socketId);
-      }
-
-      if (room.status !== "finished") {
-        room.players.forEach(updatePlayerDefeated);
-      }
-
-      maybeFinishGame(room);
-      emitRoomState(roomCode);
+    if (room.order.length === 0) {
+      delete rooms[roomCode];
       return;
     }
 
-    player.connected = false;
-    reassignHostIfNeeded(room, socketId);
-
-    if (room.status === "battle" && room.currentTurnPlayerId === socketId) {
-      room.currentTurnPlayerId = getNextAlivePlayerId(room, socketId);
-    }
-
-    maybeFinishGame(room);
-    emitRoomState(roomCode);
+    emitRoomState(room);
     return;
   }
-}
 
-function shipsAtCoordinate(player, x, y) {
-  const result = [];
-  for (let shipIndex = 0; shipIndex < player.ships.length; shipIndex += 1) {
-    const ship = player.ships[shipIndex];
-    if (ship.some((cell) => cell.x === x && cell.y === y)) {
-      result.push({ shipIndex, ship });
-    }
+  if ((room.status === "battle" || room.status === "finished") && !explicitLeave) {
+    player.connected = false;
+    emitRoomState(room);
+    return;
   }
-  return result;
+
+  if (room.status === "battle" || room.status === "finished") {
+    player.connected = false;
+    player.defeated = true;
+
+    if (room.status === "battle" && room.order[room.turnIndex] === socket.id) {
+      advanceTurn(room);
+    }
+
+    emitRoomState(room);
+    return;
+  }
+
+  delete room.players[socket.id];
+  room.order = room.order.filter((playerId) => playerId !== socket.id);
+
+  if (room.order.length === 0) {
+    delete rooms[roomCode];
+    return;
+  }
+
+  room.order.forEach((playerId, index) => {
+    room.players[playerId].isHost = index === 0;
+  });
+
+  if (room.turnIndex >= room.order.length) {
+    room.turnIndex = 0;
+  }
+
+  emitRoomState(room);
 }
 
 io.on("connection", (socket) => {
-  console.log("socket connected:", socket.id);
-  socket.emit("server_hello", { socketId: socket.id });
+  socket.on("create_room", ({ clientId, playerName } = {}, callback) => {
+    const code = makeRoomCode();
+    const room = {
+      code,
+      players: {},
+      order: [],
+      turnIndex: 0,
+      status: "lobby",
+      winnerId: "",
+    };
 
-  socket.on("create_room", (payload = {}, ack = () => {}) => {
-    try {
-      const playerName = String(payload.playerName || "").trim() || "Player 1";
-      const roomCode = generateUniqueRoomCode();
+    room.players[socket.id] = createPlayer(socket, clientId, playerName, true, 1);
+    room.order.push(socket.id);
+    rooms[code] = room;
 
-      const room = {
-        code: roomCode,
-        status: "placement",
-        hostId: socket.id,
-        players: [createPlayer(socket.id, playerName, 1)],
-        currentTurnPlayerId: null,
-        winnerId: null,
-        winnerName: null,
-      };
-
-      rooms.set(roomCode, room);
-      socket.join(roomCode);
-      emitRoomState(roomCode);
-      ack({ ok: true, roomCode, playerId: socket.id });
-    } catch (_error) {
-      ack({ ok: false, error: "Could not create room." });
-    }
+    socket.join(code);
+    callback?.({ ok: true, roomCode: code });
+    emitRoomState(room);
   });
 
-  socket.on("join_room", (payload = {}, ack = () => {}) => {
-    try {
-      const roomCode = String(payload.roomCode || "").trim().toUpperCase();
-      const playerName = String(payload.playerName || "").trim() || "Player";
+  socket.on("join_room", ({ clientId, roomCode, playerName } = {}, callback) => {
+    const code = normalizeRoomCode(roomCode);
+    const room = rooms[code];
 
-      if (!roomCode || !rooms.has(roomCode)) {
-        ack({ ok: false, error: "Room not found." });
-        return;
-      }
-
-      const room = rooms.get(roomCode);
-
-      if (room.status === "battle" || room.status === "finished") {
-        ack({ ok: false, error: "This room is already in battle." });
-        return;
-      }
-
-      if (room.players.some((p) => p.id === socket.id)) {
-        ack({ ok: true, roomCode, playerId: socket.id });
-        emitRoomState(roomCode);
-        return;
-      }
-
-      room.players.push(createPlayer(socket.id, playerName, room.players.length + 1));
-      socket.join(roomCode);
-      emitRoomState(roomCode);
-      ack({ ok: true, roomCode, playerId: socket.id });
-    } catch (_error) {
-      ack({ ok: false, error: "Could not join room." });
+    if (!room) {
+      callback?.({ ok: false, error: "Room not found." });
+      return;
     }
+
+    const existingPlayer = findPlayerByClientId(room, clientId);
+    if (existingPlayer) {
+      reattachPlayer(room, existingPlayer, socket);
+      callback?.({ ok: true, roomCode: code });
+      emitRoomState(room);
+      return;
+    }
+
+    if (room.players[socket.id]) {
+      callback?.({ ok: true, roomCode: code });
+      emitRoomState(room);
+      return;
+    }
+
+    if (room.order.length >= MAX_PLAYERS) {
+      callback?.({ ok: false, error: "Room is full." });
+      return;
+    }
+
+    if (room.status !== "lobby") {
+      callback?.({ ok: false, error: "Battle already started." });
+      return;
+    }
+
+    room.players[socket.id] = createPlayer(socket, clientId, playerName, false, room.order.length + 1);
+    room.order.push(socket.id);
+
+    socket.join(code);
+    callback?.({ ok: true, roomCode: code });
+    emitRoomState(room);
   });
 
-  socket.on("submit_ships", (payload = {}, ack = () => {}) => {
-    try {
-      const roomCode = String(payload.roomCode || "").trim().toUpperCase();
-      const room = rooms.get(roomCode);
+  socket.on("start_placement", ({ clientId, roomCode } = {}, callback) => {
+    const code = normalizeRoomCode(roomCode);
+    const room = rooms[code];
+    const existingPlayer = findPlayerByClientId(room, clientId);
+    const player = existingPlayer ? reattachPlayer(room, existingPlayer, socket) : room?.players[socket.id];
 
-      if (!room) {
-        ack({ ok: false, error: "Room not found." });
-        return;
-      }
-
-      const player = room.players.find((p) => p.id === socket.id);
-      if (!player) {
-        ack({ ok: false, error: "Player not found in room." });
-        return;
-      }
-
-      const normalized = normalizeShips(payload.ships);
-      if (!normalized.ok) {
-        ack({ ok: false, error: normalized.error });
-        return;
-      }
-
-      player.ships = normalized.ships;
-      player.ready = true;
-      player.hitsTaken = new Set();
-      player.shotHistory = [];
-      player.revealedSunkShipCells = [];
-      player.defeated = false;
-      player.connected = true;
-
-      const everyoneReady = room.players.length >= 2 && room.players.every((p) => p.ready);
-
-      if (everyoneReady) {
-        room.status = "battle";
-        room.currentTurnPlayerId = aliveConnectedPlayers(room)[0]?.id || alivePlayers(room)[0]?.id || null;
-        room.winnerId = null;
-        room.winnerName = null;
-      } else {
-        room.status = "placement";
-      }
-
-      emitRoomState(roomCode);
-      ack({ ok: true });
-    } catch (_error) {
-      ack({ ok: false, error: "Could not submit ships." });
+    if (!room || !player) {
+      callback?.({ ok: false, error: "Room not found." });
+      return;
     }
+
+    if (!player.isHost) {
+      callback?.({ ok: false, error: "Only the host can start placement." });
+      return;
+    }
+
+    if (room.status !== "lobby") {
+      callback?.({ ok: false, error: "Placement already started." });
+      return;
+    }
+
+    if (room.order.length < MIN_PLAYERS) {
+      callback?.({ ok: false, error: `Need at least ${MIN_PLAYERS} players.` });
+      return;
+    }
+
+    room.status = "placement";
+    room.turnIndex = 0;
+    room.winnerId = "";
+
+    room.order.forEach((playerId) => {
+      const roomPlayer = room.players[playerId];
+      if (!roomPlayer) return;
+
+      roomPlayer.ships = [];
+      roomPlayer.hitsTakenKeys = [];
+      roomPlayer.missesTakenKeys = [];
+      roomPlayer.shotsTaken = [];
+      roomPlayer.sunkShipIndexes = [];
+      roomPlayer.shotHistory = [];
+      roomPlayer.revealedSunkShipCells = [];
+      roomPlayer.ready = false;
+      roomPlayer.defeated = false;
+    });
+
+    callback?.({ ok: true });
+    emitRoomState(room);
   });
 
-  socket.on("leave_room", (payload = {}, ack = () => {}) => {
-    try {
-      const roomCode = String(payload.roomCode || "").trim().toUpperCase();
-      if (!roomCode || !rooms.has(roomCode)) {
-        ack({ ok: true });
-        return;
-      }
+  socket.on("submit_ships", ({ clientId, roomCode, ships } = {}, callback) => {
+    const code = normalizeRoomCode(roomCode);
+    const room = rooms[code];
+    const existingPlayer = findPlayerByClientId(room, clientId);
+    const player = existingPlayer ? reattachPlayer(room, existingPlayer, socket) : room?.players[socket.id];
 
-      removePlayerFromRoom(socket.id, true);
-      socket.leave(roomCode);
-      ack({ ok: true });
-    } catch (_error) {
-      ack({ ok: false, error: "Could not leave room." });
+    if (!room || !player) {
+      callback?.({ ok: false, error: "Room not found." });
+      return;
     }
+
+    if (room.status !== "placement") {
+      callback?.({ ok: false, error: "Placement has not started." });
+      return;
+    }
+
+    const normalizedShips = normalizeShips(ships);
+    const validationError = validateShips(normalizedShips);
+    if (validationError) {
+      callback?.({ ok: false, error: validationError });
+      return;
+    }
+
+    player.ships = normalizedShips;
+    player.hitsTakenKeys = [];
+    player.missesTakenKeys = [];
+    player.shotsTaken = [];
+    player.sunkShipIndexes = [];
+    player.shotHistory = [];
+    player.revealedSunkShipCells = [];
+    player.ready = true;
+    player.defeated = false;
+
+    const allReady =
+      room.order.length >= MIN_PLAYERS &&
+      room.order.every((playerId) => room.players[playerId]?.ready);
+
+    if (allReady) {
+      room.status = "battle";
+      room.turnIndex = 0;
+      room.winnerId = "";
+    }
+
+    callback?.({ ok: true });
+    emitRoomState(room);
   });
 
-  socket.on("fire_shot", (payload = {}, ack = () => {}) => {
-    try {
-      const roomCode = String(payload.roomCode || "").trim().toUpperCase();
-      const x = Number(payload.x);
-      const y = Number(payload.y);
+  socket.on("fire_shot", ({ clientId, roomCode, x, y } = {}, callback) => {
+    const code = normalizeRoomCode(roomCode);
+    const room = rooms[code];
+    const existingPlayer = findPlayerByClientId(room, clientId);
+    const shooter = existingPlayer ? reattachPlayer(room, existingPlayer, socket) : room?.players[socket.id];
+    const shotX = Number(x);
+    const shotY = Number(y);
 
-      const room = rooms.get(roomCode);
-      if (!room) {
-        ack({ ok: false, error: "Room not found." });
-        return;
-      }
+    if (!room || !shooter) {
+      callback?.({ ok: false, error: "Room not found." });
+      return;
+    }
 
-      if (room.status !== "battle") {
-        ack({ ok: false, error: "Battle has not started." });
-        return;
-      }
+    if (room.status !== "battle") {
+      callback?.({ ok: false, error: "Battle has not started." });
+      return;
+    }
 
-      const shooter = room.players.find((p) => p.id === socket.id);
-      if (!shooter) {
-        ack({ ok: false, error: "Shooter not found." });
-        return;
-      }
+    if (room.order[room.turnIndex] !== shooter.id) {
+      callback?.({ ok: false, error: "Not your turn." });
+      return;
+    }
 
-      if (shooter.defeated) {
-        ack({ ok: false, error: "Defeated players cannot shoot." });
-        return;
-      }
+    if (
+      !Number.isInteger(shotX) ||
+      !Number.isInteger(shotY) ||
+      shotX < 0 ||
+      shotX >= BOARD_SIZE ||
+      shotY < 0 ||
+      shotY >= BOARD_SIZE
+    ) {
+      callback?.({ ok: false, error: "Shot is outside the board." });
+      return;
+    }
 
-      if (room.currentTurnPlayerId !== socket.id) {
-        ack({ ok: false, error: "It is not your turn." });
-        return;
-      }
+    if (shooter.shotHistory.some((shot) => shot.x === shotX && shot.y === shotY)) {
+      callback?.({ ok: false, error: "You already fired there." });
+      return;
+    }
 
-      if (!isInsideBoard(x, y)) {
-        ack({ ok: false, error: "Invalid shot." });
-        return;
-      }
+    const hitPlayers = [];
+    const sunkShips = [];
+    const eliminatedPlayers = [];
+    const sunkMissShips = [];
+    const missTargets = [];
+    let hit = false;
+    const shotKey = keyOf(shotX, shotY);
 
-      const shotAlreadyUsedByYou = shooter.shotHistory.some((shot) => shot.x === x && shot.y === y);
-      if (shotAlreadyUsedByYou) {
-        ack({ ok: false, error: "You already fired at that cell." });
-        return;
-      }
+    for (const targetId of room.order) {
+      if (targetId === shooter.id) continue;
 
-      const hitPlayers = [];
-      const sunkShips = [];
-      const eliminatedPlayers = [];
+      const target = room.players[targetId];
+      if (!target || target.defeated) continue;
 
-      for (const target of room.players) {
-        if (target.id === shooter.id || target.defeated) continue;
-
-        const matchingShips = shipsAtCoordinate(target, x, y);
-        if (!matchingShips.length) {
-          continue;
-        }
-
-        let registeredHitForThisTarget = false;
-
-        for (const { shipIndex, ship } of matchingShips) {
-          const wasSunkBefore = shipIsSunk(target, ship);
-
-          if (!wasSunkBefore) {
-            registeredHitForThisTarget = true;
-          }
-
-          const cellKey = keyOf(x, y);
-          target.hitsTaken.add(cellKey);
-
-          const isSunkNow = shipIsSunk(target, ship);
-          if (!wasSunkBefore && isSunkNow) {
-            const cells = ship.map((cell) => ({ x: cell.x, y: cell.y }));
-            sunkShips.push({
-              targetPlayerId: target.id,
-              targetPlayerName: target.name,
-              shipIndex,
-              cells,
-            });
-
-            shooter.revealedSunkShipCells.push({
-              targetPlayerId: target.id,
-              shipIndex,
-              cells,
-            });
-          }
-        }
-
-        if (registeredHitForThisTarget) {
-          hitPlayers.push({ id: target.id, name: target.name });
-        }
-
-        const wasDefeatedBefore = target.defeated;
-        updatePlayerDefeated(target);
-
-        if (!wasDefeatedBefore && target.defeated) {
-          eliminatedPlayers.push({
-            id: target.id,
-            name: target.name,
+      const shipHits = findActiveShipsAt(target, shotX, shotY);
+      if (!shipHits.length) {
+        const wasShipHitBefore = target.hitsTakenKeys.includes(shotKey);
+        let previousSunkShip = null;
+        if (wasShipHitBefore) {
+          previousSunkShip = target.ships.find((ship, shipIndex) => {
+            return (
+              target.sunkShipIndexes.includes(shipIndex) &&
+              ship.some((cell) => cell.x === shotX && cell.y === shotY)
+            );
           });
+
+          if (previousSunkShip) {
+            sunkMissShips.push({
+              playerId: target.id,
+              playerName: target.name,
+              cells: clone(previousSunkShip),
+            });
+          }
+        }
+        missTargets.push({ target, wasShipHitBefore });
+        continue;
+      }
+
+      hit = true;
+      hitPlayers.push({ id: target.id, name: target.name, shipsHit: shipHits.length });
+
+      if (!target.hitsTakenKeys.includes(shotKey)) {
+        target.hitsTakenKeys.push(shotKey);
+      }
+
+      let shotResult = "hit";
+
+      for (const shipHit of shipHits) {
+        if (!target.sunkShipIndexes.includes(shipHit.index) && isShipSunk(target, shipHit.ship)) {
+          target.sunkShipIndexes.push(shipHit.index);
+          shotResult = "sunk";
+          recordSunkShip(target, shipHit.ship);
+          const sunkShip = {
+            playerId: target.id,
+            playerName: target.name,
+            cells: clone(shipHit.ship),
+          };
+          revealSunkShip(room, sunkShip);
+          sunkShips.push(sunkShip);
         }
       }
 
-      shooter.shotHistory.push({
-        x,
-        y,
-        hit: hitPlayers.length > 0,
-        hitPlayerIds: hitPlayers.map((p) => p.id),
-        hitPlayerNames: hitPlayers.map((p) => p.name),
-      });
-
-      room.players.forEach(updatePlayerDefeated);
-      maybeFinishGame(room);
-
-      if (room.status === "battle") {
-        if (hitPlayers.length === 0) {
-          room.currentTurnPlayerId = getNextAlivePlayerId(room, shooter.id);
-        } else {
-          room.currentTurnPlayerId = shooter.id;
-        }
+      if (shotResult === "hit") {
+        recordShotTaken(target, shotX, shotY, "hit");
       }
 
-      if (sunkShips.length) {
-        io.to(shooter.id).emit("battle_popup", {
-          type: "sunk",
-          items: sunkShips.map((ship) => ({
-            text: `You sunk a ship from ${ship.targetPlayerName}`,
-          })),
-        });
+      if (target.sunkShipIndexes.length === target.ships.length && !target.defeated) {
+        target.defeated = true;
+        eliminatedPlayers.push({ id: target.id, name: target.name });
       }
-
-      if (eliminatedPlayers.length) {
-        io.to(room.code).emit("battle_popup", {
-          type: "eliminated",
-          items: eliminatedPlayers.map((player) => ({
-            text: `${player.name} has been eliminated`,
-          })),
-        });
-      }
-
-      if (room.status === "finished" && room.winnerName) {
-        io.to(room.code).emit("battle_popup", {
-          type: "winner",
-          items: [{ text: `${room.winnerName} wins!` }],
-        });
-      }
-
-      emitRoomState(roomCode);
-
-      ack({
-        ok: true,
-        hit: hitPlayers.length > 0,
-        hitPlayers,
-        sunkShips,
-        eliminatedPlayers,
-        winnerName: room.winnerName || null,
-      });
-    } catch (_error) {
-      ack({ ok: false, error: "Could not fire shot." });
     }
+
+    for (const missTarget of missTargets) {
+      if (hit) {
+        if (!missTarget.wasShipHitBefore) {
+          recordShotTaken(missTarget.target, shotX, shotY, "global-hit");
+        }
+      } else {
+        addMissTaken(missTarget.target, shotKey);
+        if (!missTarget.wasShipHitBefore) {
+          recordShotTaken(missTarget.target, shotX, shotY, "miss");
+        }
+      }
+    }
+
+    shooter.shotHistory.push({
+      x: shotX,
+      y: shotY,
+      hit,
+      sunk: sunkShips.length > 0,
+      sunkMiss: sunkMissShips.length > 0,
+    });
+
+    for (const ship of sunkMissShips) {
+      const alreadyRevealed = shooter.revealedSunkShipCells.some((revealed) => {
+        return (
+          revealed.playerId === ship.playerId &&
+          revealed.cells?.every((cell, index) => {
+            const other = ship.cells[index];
+            return other && other.x === cell.x && other.y === cell.y;
+          })
+        );
+      });
+
+      if (!alreadyRevealed) {
+        shooter.revealedSunkShipCells.push(ship);
+      }
+    }
+
+    if (sunkShips.length) {
+      emitPopup(
+        room,
+        "sunk",
+        sunkShips.map((ship) => ({ text: `Ship sunk: ${ship.playerName}` }))
+      );
+    }
+
+    if (eliminatedPlayers.length) {
+      emitPopup(
+        room,
+        "eliminated",
+        eliminatedPlayers.map((player) => ({ text: `Player out: ${player.name}` }))
+      );
+    }
+
+    const alivePlayers = room.order
+      .map((playerId) => room.players[playerId])
+      .filter((player) => player && !player.defeated);
+
+    if (alivePlayers.length === 1) {
+      room.status = "finished";
+      room.winnerId = alivePlayers[0].id;
+      emitPopup(room, "winner", [{ text: `Winner: ${alivePlayers[0].name}` }]);
+    } else if (!hit) {
+      advanceTurn(room);
+    }
+
+    callback?.({ ok: true, hit, hitPlayers, sunkShips, eliminatedPlayers, sunkMissShips });
+    emitRoomState(room);
+  });
+
+  socket.on("leave_room", ({ roomCode } = {}, callback) => {
+    removePlayerFromRoom(socket, normalizeRoomCode(roomCode), true);
+    callback?.({ ok: true });
   });
 
   socket.on("disconnect", () => {
-    console.log("socket disconnected:", socket.id);
-    removePlayerFromRoom(socket.id, false);
+    Object.keys(rooms).forEach((roomCode) => {
+      removePlayerFromRoom(socket, roomCode);
+    });
   });
 });
 
-server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Battleship server listening on http://0.0.0.0:${PORT}`);
+const buildPath = path.join(__dirname, "..", "build");
+app.use(
+  express.static(buildPath, {
+    setHeaders(res, filePath) {
+      if (filePath.endsWith("index.html")) {
+        res.setHeader("Cache-Control", "no-store");
+      }
+    },
+  })
+);
+app.get("/{*splat}", (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.sendFile(path.join(buildPath, "index.html"));
+});
+
+server.listen(PORT, () => {
+  console.log(`SERVER RUNNING ${PORT}`);
 });
