@@ -1,6 +1,8 @@
 const express = require("express");
+const fs = require("fs");
 const http = require("http");
 const path = require("path");
+const { execSync } = require("child_process");
 const { Server } = require("socket.io");
 
 const app = express();
@@ -724,6 +726,18 @@ io.on("connection", (socket) => {
 
 const buildPath = path.join(process.cwd(), "build");
 const indexPath = path.join(buildPath, "index.html");
+
+if (!fs.existsSync(indexPath)) {
+  console.log(`CLIENT BUILD MISSING ${indexPath}`);
+  console.log("BUILDING CLIENT");
+  try {
+    execSync("npm run build", { cwd: process.cwd(), stdio: "inherit" });
+  } catch (error) {
+    console.error("CLIENT BUILD FAILED");
+    process.exit(1);
+  }
+}
+
 app.use(
   express.static(buildPath, {
     setHeaders(res, filePath) {
