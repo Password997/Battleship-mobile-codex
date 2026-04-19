@@ -723,6 +723,7 @@ io.on("connection", (socket) => {
 });
 
 const buildPath = path.join(__dirname, "..", "build");
+const indexPath = path.join(buildPath, "index.html");
 app.use(
   express.static(buildPath, {
     setHeaders(res, filePath) {
@@ -732,9 +733,13 @@ app.use(
     },
   })
 );
+app.get("/", (req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.sendFile(indexPath);
+});
 app.get("/{*splat}", (req, res) => {
   res.setHeader("Cache-Control", "no-store");
-  res.sendFile(path.join(buildPath, "index.html"));
+  res.sendFile(indexPath);
 });
 
 server.listen(PORT, () => {
