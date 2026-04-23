@@ -16,63 +16,52 @@ function CreateGameScreen({ onCreateRoom, onBack, isLoading }) {
 
   return (
     <div className="app__panel">
-      <h1 className="app__title">Create Game</h1>
-      <p className="app__text">Enter your name, then create a room.</p>
+      <div className="app__eyebrow">Command Deck</div>
+      <h1 className="app__title" style={{ fontSize: "clamp(30px, 7vw, 48px)" }}>
+        Create Match
+      </h1>
+      <p className="app__text">
+        Enter your callsign and open a new room for the fleet.
+      </p>
 
-      <div style={{ marginTop: "16px" }}>
+      <div className="app__form">
         <input
           type="text"
           value={playerName}
           onChange={(event) => setPlayerName(event.target.value)}
-          placeholder="Your name"
-          style={inputStyle}
+          placeholder="Admiral name"
+          className="app__input"
         />
       </div>
 
-      <div style={{ marginTop: "16px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
-        <button style={primaryButtonStyle} onClick={handleSubmit} disabled={isLoading}>
+      <div className="app__meta">
+        <div className="app__meta-card">
+          <div className="app__meta-label">Room Type</div>
+          <div className="app__meta-value">Private Lobby</div>
+          <div className="app__meta-small">Share the code with your crew</div>
+        </div>
+        <div className="app__meta-card">
+          <div className="app__meta-label">Focus</div>
+          <div className="app__meta-value">Multiplayer Ready</div>
+          <div className="app__meta-small">Designed for bigger matches too</div>
+        </div>
+      </div>
+
+      <div className="app__button-row">
+        <button className="app__button" onClick={handleSubmit} disabled={isLoading}>
           {isLoading ? "Creating..." : "Create Room"}
         </button>
 
-        <button style={secondaryButtonStyle} onClick={onBack} disabled={isLoading}>
+        <button
+          className="app__button app__button--secondary"
+          onClick={onBack}
+          disabled={isLoading}
+        >
           Back
         </button>
       </div>
     </div>
   );
 }
-
-const inputStyle = {
-  width: "100%",
-  padding: "12px 14px",
-  borderRadius: "12px",
-  border: "1px solid #334155",
-  background: "#0f172a",
-  color: "#e2e8f0",
-  fontSize: "15px",
-  boxSizing: "border-box"
-};
-
-const primaryButtonStyle = {
-  padding: "12px 16px",
-  border: "none",
-  borderRadius: "12px",
-  background: "#2563eb",
-  color: "#ffffff",
-  fontSize: "15px",
-  fontWeight: "600",
-  cursor: "pointer"
-};
-
-const secondaryButtonStyle = {
-  padding: "12px 16px",
-  border: "1px solid #334155",
-  borderRadius: "12px",
-  background: "#111827",
-  color: "#e2e8f0",
-  fontSize: "15px",
-  fontWeight: "600",
-  cursor: "pointer"
-};
 
 export default CreateGameScreen;

@@ -23,71 +23,60 @@ function JoinGameScreen({ onJoinRoom, onBack, isLoading }) {
 
   return (
     <div className="app__panel">
-      <h1 className="app__title">Join Game</h1>
-      <p className="app__text">Enter the room code and your name.</p>
+      <div className="app__eyebrow">Fleet Link</div>
+      <h1 className="app__title" style={{ fontSize: "clamp(30px, 7vw, 48px)" }}>
+        Join Match
+      </h1>
+      <p className="app__text">
+        Enter the room code and your callsign to board the multiplayer battle.
+      </p>
 
-      <div style={{ marginTop: "16px", display: "grid", gap: "12px" }}>
+      <div className="app__form">
         <input
           type="text"
           value={roomCode}
           onChange={(event) => setRoomCode(event.target.value.toUpperCase())}
           placeholder="Room code"
-          style={inputStyle}
+          className="app__input"
         />
 
         <input
           type="text"
           value={playerName}
           onChange={(event) => setPlayerName(event.target.value)}
-          placeholder="Your name"
-          style={inputStyle}
+          placeholder="Admiral name"
+          className="app__input"
         />
       </div>
 
-      <div style={{ marginTop: "16px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
-        <button style={primaryButtonStyle} onClick={handleSubmit} disabled={isLoading}>
+      <div className="app__meta">
+        <div className="app__meta-card">
+          <div className="app__meta-label">Access</div>
+          <div className="app__meta-value">Room Code Entry</div>
+          <div className="app__meta-small">Fast join for private sessions</div>
+        </div>
+        <div className="app__meta-card">
+          <div className="app__meta-label">Battle Size</div>
+          <div className="app__meta-value">Scales Beyond Duels</div>
+          <div className="app__meta-small">Made for larger turn orders</div>
+        </div>
+      </div>
+
+      <div className="app__button-row">
+        <button className="app__button" onClick={handleSubmit} disabled={isLoading}>
           {isLoading ? "Joining..." : "Join Room"}
         </button>
 
-        <button style={secondaryButtonStyle} onClick={onBack} disabled={isLoading}>
+        <button
+          className="app__button app__button--secondary"
+          onClick={onBack}
+          disabled={isLoading}
+        >
           Back
         </button>
       </div>
     </div>
   );
 }
-
-const inputStyle = {
-  width: "100%",
-  padding: "12px 14px",
-  borderRadius: "12px",
-  border: "1px solid #334155",
-  background: "#0f172a",
-  color: "#e2e8f0",
-  fontSize: "15px",
-  boxSizing: "border-box"
-};
-
-const primaryButtonStyle = {
-  padding: "12px 16px",
-  border: "none",
-  borderRadius: "12px",
-  background: "#2563eb",
-  color: "#ffffff",
-  fontSize: "15px",
-  fontWeight: "600",
-  cursor: "pointer"
-};
-
-const secondaryButtonStyle = {
-  padding: "12px 16px",
-  border: "1px solid #334155",
-  borderRadius: "12px",
-  background: "#111827",
-  color: "#e2e8f0",
-  fontSize: "15px",
-  fontWeight: "600",
-  cursor: "pointer"
-};
 
 export default JoinGameScreen;

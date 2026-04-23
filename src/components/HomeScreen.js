@@ -1,41 +1,50 @@
 function HomeScreen({ onCreateGame, onJoinGame }) {
   return (
-    <div className="app__panel">
-      <h1 className="app__title">Battleship Mobile</h1>
-      <p className="app__text">Play a turn-based multiplayer battleship game.</p>
+    <div className="app__panel app__panel--hero">
+      <div className="app__preview-badge">Local Preview</div>
+      <div className="app__title-wrap">
+        <div className="app__eyebrow">Tactical Naval Warfare</div>
+        <h1 className="app__title">Battleship</h1>
+        <p className="app__text">
+          A darker, sharper multiplayer command deck for six-player fleet battles.
+        </p>
+      </div>
 
-      <div style={{ marginTop: "20px", display: "grid", gap: "12px" }}>
-        <button style={buttonStyle} onClick={onCreateGame}>
-          Create Game
+      <div className="app__hero-art" aria-hidden="true">
+        <div className="app__hero-radar" />
+        <div className="app__hero-ship" />
+      </div>
+
+      <div className="app__cta-grid">
+        <button className="app__action app__action--primary" onClick={onCreateGame}>
+          <span className="app__action-title">Create Match</span>
+          <span className="app__action-subtitle">
+            Open a multiplayer room and command the fleet from the first move.
+          </span>
         </button>
-        <button style={buttonStyleSecondary} onClick={onJoinGame}>
-          Join Game
+
+        <button className="app__action" onClick={onJoinGame}>
+          <span className="app__action-title">Join Match</span>
+          <span className="app__action-subtitle">
+            Enter a room code and drop into an active tactical board.
+          </span>
         </button>
+      </div>
+
+      <div className="app__meta">
+        <div className="app__meta-card">
+          <div className="app__meta-label">Mode</div>
+          <div className="app__meta-value">Multiplayer Fleet Battle</div>
+          <div className="app__meta-small">Built for 2-6 players</div>
+        </div>
+        <div className="app__meta-card">
+          <div className="app__meta-label">Visual Target</div>
+          <div className="app__meta-value">Premium Oceanic HUD</div>
+          <div className="app__meta-small">Dark water, cyan radar, ember hits</div>
+        </div>
       </div>
     </div>
   );
 }
-
-const buttonStyle = {
-  padding: "14px 16px",
-  border: "none",
-  borderRadius: "12px",
-  background: "#2563eb",
-  color: "#ffffff",
-  fontSize: "16px",
-  fontWeight: "600",
-  cursor: "pointer"
-};
-
-const buttonStyleSecondary = {
-  padding: "14px 16px",
-  border: "1px solid #334155",
-  borderRadius: "12px",
-  background: "#0f172a",
-  color: "#e2e8f0",
-  fontSize: "16px",
-  fontWeight: "600",
-  cursor: "pointer"
-};
 
 export default HomeScreen;

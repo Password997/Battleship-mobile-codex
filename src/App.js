@@ -90,9 +90,9 @@ function ShipSilhouettes({ ships, cellSize, gap }) {
               width: bounds.width,
               height: bounds.height,
               borderRadius: bounds.horizontal ? "999px 12px 12px 999px" : "999px 999px 12px 12px",
-              background: "linear-gradient(135deg, #bfdbfe 0%, #60a5fa 58%, #2563eb 100%)",
-              border: "2px solid #1d4ed8",
-              boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.28), 0 4px 10px rgba(37,99,235,0.18)",
+              background: "linear-gradient(135deg, #edf9ff 0%, #7fdcff 12%, #2c5f82 42%, #0a1a2c 100%)",
+              border: "1px solid rgba(145,236,255,0.36)",
+              boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.18), 0 6px 14px rgba(18,102,156,0.18)",
               pointerEvents: "none",
               zIndex: 0,
               boxSizing: "border-box",
@@ -106,7 +106,7 @@ function ShipSilhouettes({ ships, cellSize, gap }) {
                 width: bounds.horizontal ? noseSize : Math.max(8, bounds.width * 0.5),
                 height: bounds.horizontal ? Math.max(8, bounds.height * 0.5) : noseSize,
                 borderRadius: "999px",
-                background: "rgba(255,255,255,0.44)",
+                background: "rgba(239,251,255,0.62)",
                 transform: "translate(-50%, -50%)",
               }}
             />
@@ -122,15 +122,18 @@ function HomeButton({ children, onClick }) {
     <button
       onClick={onClick}
       style={{
-        background: "#2563eb",
-        color: "#ffffff",
-        border: "none",
-        borderRadius: 12,
-        padding: "10px 14px",
+        background: "linear-gradient(180deg, rgba(10,54,81,1), rgba(6,25,42,1))",
+        color: "#f2fcff",
+        border: "1px solid rgba(99,226,255,0.22)",
+        borderRadius: 16,
+        padding: "12px 16px",
         fontSize: 14,
-        fontWeight: 700,
+        fontWeight: 800,
+        letterSpacing: "0.05em",
+        textTransform: "uppercase",
         cursor: "pointer",
         width: "100%",
+        boxShadow: "0 14px 28px rgba(0,0,0,0.22)",
       }}
     >
       {children}
@@ -140,10 +143,11 @@ function HomeButton({ children, onClick }) {
 
 function cardStyle() {
   return {
-    background: "#ffffff",
-    borderRadius: 18,
+    background: "linear-gradient(180deg, rgba(8,31,51,0.97), rgba(4,18,31,0.96))",
+    borderRadius: 22,
     padding: 20,
-    boxShadow: "0 10px 24px rgba(0,0,0,0.08)",
+    border: "1px solid rgba(95,224,255,0.16)",
+    boxShadow: "0 18px 38px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(95,224,255,0.04)",
   };
 }
 
@@ -159,24 +163,37 @@ function PlacementActionButton({
       onClick={onClick}
       style={{
         background,
-        color: "#ffffff",
-        border: "none",
-        borderRadius: 12,
-        padding: "9px 13px",
+        color: "#f3fbff",
+        border: "1px solid rgba(102,229,255,0.14)",
+        borderRadius: 16,
+        padding: "11px 15px",
         cursor: "pointer",
         display: "inline-flex",
         alignItems: "center",
         gap: 7,
+        boxShadow: "0 12px 24px rgba(0,0,0,0.22)",
       }}
     >
       <span
         key={animationKey}
         className={animationKey ? "rotate-action-icon" : ""}
-        style={{ fontSize: 21, lineHeight: 1, display: "inline-block" }}
+        style={{
+          minWidth: 22,
+          fontSize: 13,
+          lineHeight: 1,
+          display: "inline-grid",
+          placeItems: "center",
+          borderRadius: 999,
+          padding: "4px 6px",
+          background: "rgba(255,255,255,0.08)",
+          letterSpacing: "0.06em",
+        }}
       >
         {icon}
       </span>
-      <span style={{ fontSize: 14, fontWeight: 500 }}>{label}</span>
+      <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase" }}>
+        {label}
+      </span>
     </button>
   );
 }
@@ -195,7 +212,7 @@ function FleetCounter({ shipLengths, placedCount, currentIndex }) {
       {shipLengths.map((length, index) => {
         const isPlaced = index < placedCount;
         const isCurrent = index === currentIndex;
-        const color = isPlaced ? "#16a34a" : isCurrent ? "#2563eb" : "#cbd5e1";
+        const color = isPlaced ? "#ff8a3d" : isCurrent ? "#59dfff" : "rgba(123, 183, 207, 0.26)";
 
         return (
           <div
@@ -204,7 +221,7 @@ function FleetCounter({ shipLengths, placedCount, currentIndex }) {
               display: "grid",
               justifyItems: "center",
               gap: 5,
-              color: isPlaced ? "#166534" : isCurrent ? "#1d4ed8" : "#64748b",
+              color: isPlaced ? "#ffd0b0" : isCurrent ? "#a5f0ff" : "#6f97ab",
               fontWeight: isCurrent ? 900 : 700,
             }}
           >
@@ -974,12 +991,14 @@ export default function App() {
     <div
       style={{
         minHeight: "100vh",
-        background: "#000000",
-        display: "grid",
-        placeItems: "center",
-        padding: 14,
+        background:
+          "radial-gradient(circle at 50% 86%, rgba(68,206,255,0.12), transparent 18%), linear-gradient(180deg, #03101a 0%, #071a2a 46%, #0a2740 78%, #081a2a 100%)",
+        padding: 16,
         boxSizing: "border-box",
-        fontFamily: "Arial, sans-serif",
+        fontFamily: "'Segoe UI', 'Trebuchet MS', Arial, sans-serif",
+        color: "#eefaff",
+        display: "flex",
+        justifyContent: "center",
       }}
     >
       <style>
@@ -988,160 +1007,449 @@ export default function App() {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
           }
+
+          @keyframes sonarSweep {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+          }
+
+          @keyframes beaconPulse {
+            0%, 100% { opacity: 0.5; transform: scale(0.98); }
+            50% { opacity: 1; transform: scale(1.04); }
+          }
         `}
       </style>
+
       <div
         style={{
-          width: "min(84vw, 360px)",
-          display: "grid",
-          gap: 14,
+          width: "min(100%, 540px)",
+          minHeight: "calc(100vh - 32px)",
+          borderRadius: 0,
+          overflow: "hidden",
+          borderLeft: "1px solid rgba(94, 224, 255, 0.18)",
+          borderRight: "1px solid rgba(94, 224, 255, 0.18)",
+          background: "linear-gradient(180deg, rgba(4,18,31,0.98), rgba(3,14,24,0.98))",
+          boxShadow: "0 26px 70px rgba(0,0,0,0.25)",
+          position: "relative",
         }}
       >
         <div
           style={{
-            background: "#000000",
-            borderRadius: 18,
-            padding: "28px 16px",
-            minHeight: 330,
             display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            boxShadow: "0 10px 30px rgba(0,0,0,0.45)",
-            border: "1px solid #2563eb",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+            padding: "10px 18px 12px",
+            borderBottom: "1px solid rgba(94,224,255,0.08)",
           }}
         >
-          <div
-            style={{
-              fontSize: 28,
-              fontWeight: 900,
-              color: "#60a5fa",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Battleship Multiplayer
-          </div>
-
-          <div
-            style={{
-              marginTop: 10,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              color: socketConnected ? "#86efac" : "#facc15",
-              fontSize: 13,
-              fontWeight: 800,
-            }}
-          >
-            <span
-              style={{
-                width: 11,
-                height: 11,
-                borderRadius: "50%",
-                background: socketConnected ? "#22c55e" : "transparent",
-                border: socketConnected ? "none" : "2px solid #facc15",
-                borderTopColor: socketConnected ? "#22c55e" : "transparent",
-                display: "inline-block",
-                animation: socketConnected ? "none" : "homeSpinner 0.8s linear infinite",
-              }}
-            />
-            {socketConnected ? "Connected" : "Connecting"}
-          </div>
-
-          <div style={{ marginTop: 18, display: "grid", gap: 12 }}>
             <div
               style={{
-                display: "flex",
+                minWidth: 78,
+                display: "grid",
+                gridTemplateColumns: "56px 1fr",
+                gap: 10,
                 alignItems: "center",
-                justifyContent: "space-between",
-                gap: 12,
               }}
             >
-              <div style={{ color: "#93c5fd", fontSize: 13, fontWeight: 800 }}>
-                Type your initials
-              </div>
               <div
                 style={{
-                  display: "flex",
-                  gap: 8,
-                  justifyContent: "flex-end",
-                }}
-              >
-                {[0, 1, 2].map((index) => (
-                  <input
-                    key={index}
-                    ref={(element) => {
-                      initialsInputRefs.current[index] = element;
-                    }}
-                    value={playerName[index] || ""}
-                    onChange={(e) => {
-                      const nextChar = e.target.value
-                        .replace(/[^a-z0-9]/gi, "")
-                        .slice(-1)
-                        .toUpperCase();
-                      const chars = playerName.padEnd(3, " ").slice(0, 3).split("");
-                      chars[index] = nextChar;
-                      setPlayerName(chars.join("").replace(/\s/g, ""));
-                      if (nextChar && index < 2) {
-                        initialsInputRefs.current[index + 1]?.focus();
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Backspace" && !playerName[index] && index > 0) {
-                        initialsInputRefs.current[index - 1]?.focus();
-                      }
-                    }}
-                    maxLength={1}
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: 8,
-                      border: playerName[index] ? "1px solid #22c55e" : "1px solid #2563eb",
-                      background: playerName[index] ? "#052e16" : "#050505",
-                      color: playerName[index] ? "#bbf7d0" : "#dbeafe",
-                      fontSize: 24,
-                      fontWeight: 900,
-                      textAlign: "center",
-                      boxSizing: "border-box",
-                      outline: "none",
-                      textTransform: "uppercase",
-                      boxShadow: playerName[index]
-                        ? "0 0 0 3px rgba(34,197,94,0.18)"
-                        : "none",
-                    }}
-                  />
-                ))}
+                  width: 56,
+                  height: 56,
+                  borderRadius: 16,
+                  border: "1px solid rgba(185,236,255,0.2)",
+                  background: "linear-gradient(180deg, rgba(20,37,51,1), rgba(7,19,30,1))",
+                  display: "grid",
+                  placeItems: "center",
+                  color: "#dff8ff",
+                fontSize: 26,
+              }}
+            >
+              ⚓
+            </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 17, fontWeight: 900, color: "#f4fbff" }}>
+                  Admiral_{playerName || "07"}
+                </div>
+                <div style={{ marginTop: 4, fontSize: 13, color: "#62ddff", fontWeight: 800, letterSpacing: "0.02em" }}>
+                  Command Deck
+                </div>
               </div>
             </div>
 
-            <input
-              value={roomCodeInput}
-              onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase().slice(0, 4))}
-              placeholder="Room code"
-              maxLength={4}
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <div
+                style={{
+                  width: 70,
+                  height: 62,
+                  borderRadius: 18,
+                  border: "1px solid rgba(94,224,255,0.14)",
+                  background: "rgba(8,31,51,0.9)",
+                  display: "grid",
+                  placeItems: "center",
+                  color: "#dff8ff",
+                fontSize: 24,
+              }}
+            >
+              ≡
+            </div>
+          </div>
+        </div>
+
+        <div style={{ padding: "18px 16px 16px" }}>
+          <div
+            style={{
+              position: "relative",
+              minHeight: 560,
+              borderRadius: 30,
+              overflow: "hidden",
+              border: "1px solid rgba(94,224,255,0.12)",
+              background:
+                "radial-gradient(circle at 50% 16%, rgba(83,224,255,0.09), transparent 26%), linear-gradient(180deg, rgba(6,22,37,0.48), rgba(5,18,31,0.1)), linear-gradient(180deg, #08192a 0%, #071524 45%, #06111d 100%)",
+            }}
+          >
+            <div
               style={{
-                width: "100%",
-                padding: "13px 14px",
-                borderRadius: 12,
-                border: "1px solid #2563eb",
-                background: "#050505",
-                color: "#dbeafe",
-                fontSize: 16,
-                boxSizing: "border-box",
-                letterSpacing: 2,
-                textTransform: "uppercase",
-                outline: "none",
+                position: "absolute",
+                inset: 0,
+                background:
+                  "linear-gradient(rgba(99,216,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(99,216,255,0.035) 1px, transparent 1px)",
+                backgroundSize: "38px 38px",
+                opacity: 0.42,
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: "50%",
+                top: "13%",
+                width: 430,
+                height: 430,
+                transform: "translate(-50%, -50%)",
+                borderRadius: "50%",
+                border: "1px solid rgba(94,224,255,0.14)",
+                boxShadow:
+                  "0 0 0 52px rgba(94,224,255,0.022), 0 0 0 120px rgba(94,224,255,0.012)",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: "50%",
+                top: "13%",
+                width: 470,
+                height: 470,
+                transform: "translate(-50%, -50%)",
+                borderRadius: "50%",
+                background:
+                  "conic-gradient(from 0deg, rgba(97,230,255,0.22), rgba(97,230,255,0.02) 18%, transparent 32%, transparent 100%)",
+                animation: "sonarSweep 9s linear infinite",
+                opacity: 0.9,
               }}
             />
 
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "1fr",
-                gap: 10,
+                position: "absolute",
+                top: 86,
+                left: 0,
+                right: 0,
+                textAlign: "center",
+                padding: "0 14px",
               }}
             >
-              <HomeButton onClick={handleCreateRoom}>Create Room</HomeButton>
-              <HomeButton onClick={handleJoinRoom}>Join Room</HomeButton>
+              <div
+                style={{
+                  fontSize: 92,
+                  lineHeight: 0.9,
+                  fontWeight: 900,
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                  color: "#edf7fd",
+                  textShadow: "0 4px 20px rgba(0,0,0,0.35)",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                }}
+              >
+                Battleship
+              </div>
+              <div
+                style={{
+                  marginTop: 10,
+                  color: "#63e1ff",
+                  fontSize: 18,
+                  letterSpacing: "0.28em",
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  opacity: 0.72,
+                }}
+              >
+                Tactical Naval Warfare
+              </div>
+            </div>
+
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                right: 0,
+                bottom: 158,
+                height: 232,
+                background:
+                  "radial-gradient(circle at 50% 0%, rgba(76,214,255,0.18), transparent 18%), linear-gradient(180deg, rgba(19,56,84,0.88), rgba(5,18,31,0.98))",
+                borderTopLeftRadius: "50% 18%",
+                borderTopRightRadius: "50% 18%",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                left: "50%",
+                bottom: 208,
+                width: 154,
+                height: 244,
+                transform: "translateX(-50%)",
+                filter: "drop-shadow(0 10px 18px rgba(0,0,0,0.38))",
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute",
+                  left: 28,
+                  right: 28,
+                  top: 0,
+                  bottom: 60,
+                  background: "linear-gradient(180deg, #0b2031, #091724)",
+                  clipPath: "polygon(50% 0%, 94% 26%, 84% 92%, 16% 92%, 6% 26%)",
+                  border: "1px solid rgba(135,231,255,0.16)",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  left: 66,
+                  top: 16,
+                  width: 20,
+                  height: 104,
+                  background: "linear-gradient(180deg, #16384f, #0a1d2d)",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  left: 44,
+                  top: 30,
+                  width: 66,
+                  height: 8,
+                  background: "rgba(188,239,255,0.7)",
+                  borderRadius: 999,
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  left: 18,
+                  right: 18,
+                  bottom: 0,
+                  height: 80,
+                  borderRadius: "50% 50% 16px 16px",
+                  background: "linear-gradient(180deg, #10283c, #06111c)",
+                  border: "1px solid rgba(135,231,255,0.12)",
+                }}
+              />
+            </div>
+
+            <div
+              style={{
+                position: "absolute",
+                left: 16,
+                right: 16,
+                bottom: 18,
+                borderRadius: 22,
+                border: "1px solid rgba(94,224,255,0.16)",
+                background: "linear-gradient(180deg, rgba(7,31,50,0.98), rgba(5,20,32,0.98))",
+                padding: 18,
+                boxShadow: "0 18px 34px rgba(0,0,0,0.28)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  flexWrap: "wrap",
+                }}
+              >
+                <div
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    color: socketConnected ? "#86efac" : "#facc15",
+                    fontSize: 13,
+                    fontWeight: 800,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 11,
+                      height: 11,
+                      borderRadius: "50%",
+                      background: socketConnected ? "#22c55e" : "transparent",
+                      border: socketConnected ? "none" : "2px solid #facc15",
+                      borderTopColor: socketConnected ? "#22c55e" : "transparent",
+                      display: "inline-block",
+                      animation: socketConnected ? "none" : "homeSpinner 0.8s linear infinite",
+                    }}
+                  />
+                  {socketConnected ? "Connected" : "Connecting"}
+                </div>
+
+                <div style={{ display: "flex", gap: 10 }}>
+                  {[0, 1, 2].map((index) => (
+                    <input
+                      key={index}
+                      ref={(element) => {
+                        initialsInputRefs.current[index] = element;
+                      }}
+                      value={playerName[index] || ""}
+                      onChange={(e) => {
+                        const nextChar = e.target.value
+                          .replace(/[^a-z0-9]/gi, "")
+                          .slice(-1)
+                          .toUpperCase();
+                        const chars = playerName.padEnd(3, " ").slice(0, 3).split("");
+                        chars[index] = nextChar;
+                        setPlayerName(chars.join("").replace(/\s/g, ""));
+                        if (nextChar && index < 2) {
+                          initialsInputRefs.current[index + 1]?.focus();
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Backspace" && !playerName[index] && index > 0) {
+                          initialsInputRefs.current[index - 1]?.focus();
+                        }
+                      }}
+                      maxLength={1}
+                      style={{
+                        width: 58,
+                        height: 58,
+                        borderRadius: 16,
+                        border: playerName[index]
+                          ? "1px solid rgba(113, 255, 167, 0.5)"
+                          : "1px solid rgba(94,224,255,0.26)",
+                        background: playerName[index]
+                          ? "linear-gradient(180deg, rgba(20,70,39,1), rgba(8,41,24,1))"
+                          : "rgba(4, 18, 31, 0.92)",
+                        color: playerName[index] ? "#dfffe6" : "#dbeafe",
+                        fontSize: 28,
+                        fontWeight: 900,
+                        textAlign: "center",
+                        boxSizing: "border-box",
+                        outline: "none",
+                        textTransform: "uppercase",
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  marginTop: 16,
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                  gap: 10,
+                }}
+              >
+                {[
+                  ["Mode", "Fleet skirmish"],
+                  ["Boards", "10 x 10"],
+                  ["Players", "2 to 6"],
+                ].map(([label, value]) => (
+                  <div
+                    key={label}
+                    style={{
+                      borderRadius: 14,
+                      padding: "10px 12px",
+                      background: "rgba(5, 18, 31, 0.72)",
+                      border: "1px solid rgba(94,224,255,0.12)",
+                    }}
+                  >
+                    <div style={{ color: "#76dfff", fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase" }}>
+                      {label}
+                    </div>
+                    <div style={{ marginTop: 6, color: "#f4fbff", fontSize: 13, fontWeight: 800 }}>
+                      {value}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ marginTop: 16, color: "#66defe", fontSize: 14, fontWeight: 900, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                Room Code
+              </div>
+
+              <input
+                value={roomCodeInput}
+                onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase().slice(0, 4))}
+                placeholder="ROOM CODE"
+                maxLength={4}
+                style={{
+                  width: "100%",
+                  marginTop: 10,
+                  padding: "18px 20px",
+                  borderRadius: 18,
+                  border: "1px solid rgba(94,224,255,0.18)",
+                  background: "rgba(3, 14, 24, 0.92)",
+                  color: "#eefaff",
+                  fontSize: 18,
+                  boxSizing: "border-box",
+                  letterSpacing: 6,
+                  textTransform: "uppercase",
+                  outline: "none",
+                }}
+              />
+            </div>
+          </div>
+
+          <div style={{ marginTop: 14, position: "relative", zIndex: 2, display: "grid", gap: 14 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <button
+                onClick={handleCreateRoom}
+                style={{
+                  border: "1px solid rgba(94,224,255,0.14)",
+                  borderRadius: 18,
+                  padding: "18px 14px",
+                  background: "linear-gradient(180deg, rgba(7,31,50,0.98), rgba(5,20,32,0.98))",
+                  color: "#eefaff",
+                  fontSize: 15,
+                  fontWeight: 900,
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  cursor: "pointer",
+                }}
+              >
+                Create Match
+              </button>
+              <button
+                onClick={handleJoinRoom}
+                style={{
+                  border: "1px solid rgba(94,224,255,0.14)",
+                  borderRadius: 18,
+                  padding: "18px 14px",
+                  background: "linear-gradient(180deg, rgba(7,31,50,0.98), rgba(5,20,32,0.98))",
+                  color: "#eefaff",
+                  fontSize: 15,
+                  fontWeight: 900,
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  cursor: "pointer",
+                }}
+              >
+                Join Match
+              </button>
             </div>
           </div>
         </div>
@@ -1149,12 +1457,12 @@ export default function App() {
         {(error || info) && (
           <div
             style={{
-              background: "#000000",
+              margin: "0 16px 16px",
               borderRadius: 18,
               padding: 16,
-              boxShadow: "0 10px 30px rgba(0,0,0,0.45)",
-              border: `1px solid ${error ? "#7f1d1d" : "#2563eb"}`,
-              color: error ? "#fca5a5" : "#93c5fd",
+              border: `1px solid ${error ? "rgba(255,149,149,0.34)" : "rgba(104,226,255,0.22)"}`,
+              background: error ? "rgba(90,20,20,0.34)" : "rgba(7,36,56,0.65)",
+              color: error ? "#ffc0c0" : "#9cefff",
               fontWeight: 700,
             }}
           >
@@ -1174,10 +1482,12 @@ export default function App() {
       <div
         style={{
           minHeight: "100vh",
-          background: "#f5f7fb",
+          background:
+            "radial-gradient(circle at 50% 70%, rgba(67,197,255,0.16), transparent 18%), linear-gradient(180deg, #03101d 0%, #06192a 38%, #07243b 68%, #020b15 100%)",
           padding: isMobile ? 12 : 20,
           boxSizing: "border-box",
-          fontFamily: "Arial, sans-serif",
+          color: "#e9f8ff",
+          fontFamily: "'Segoe UI', 'Trebuchet MS', Arial, sans-serif",
         }}
       >
         <style>
@@ -1212,10 +1522,13 @@ export default function App() {
             }}
           >
             <div style={{ flex: "1 1 320px", minWidth: 0 }}>
-              <div style={{ fontSize: isMobile ? 24 : 30, fontWeight: 900, color: "#111827" }}>
+              <div style={{ color: "#5fe0ff", fontSize: 12, letterSpacing: "0.22em", fontWeight: 800, textTransform: "uppercase" }}>
+                Fleet Deployment
+              </div>
+              <div style={{ fontSize: isMobile ? 24 : 30, fontWeight: 900, color: "#f4fbff", marginTop: 8 }}>
                 Placement
               </div>
-              <div style={{ marginTop: 6, color: "#6b7280", textAlign: isMobile ? "center" : "left" }}>
+              <div style={{ marginTop: 6, color: "#83b0c8", textAlign: isMobile ? "center" : "left" }}>
                 Room code
               </div>
               <div
@@ -1224,7 +1537,7 @@ export default function App() {
                   fontSize: "clamp(28px, 9vw, 46px)",
                   fontWeight: 900,
                   letterSpacing: "clamp(2px, 0.8vw, 5px)",
-                  color: "#2563eb",
+                  color: "#67e3ff",
                   lineHeight: 1,
                   textAlign: isMobile ? "center" : "left",
                   wordBreak: "break-word",
@@ -1237,10 +1550,10 @@ export default function App() {
             <button
               onClick={handleBack}
               style={{
-                background: "#111827",
-                color: "#ffffff",
-                border: "none",
-                borderRadius: 12,
+                background: "linear-gradient(180deg, rgba(8,37,60,0.94), rgba(4,17,29,0.94))",
+                color: "#eefbff",
+                border: "1px solid rgba(96,227,255,0.18)",
+                borderRadius: 14,
                 padding: "10px 16px",
                 fontWeight: 800,
                 cursor: "pointer",
@@ -1268,17 +1581,17 @@ export default function App() {
                   flexWrap: "wrap",
                 }}
               >
-                <div style={{ fontSize: isMobile ? 20 : 22, fontWeight: 900, color: "#111827" }}>
+                <div style={{ fontSize: isMobile ? 20 : 22, fontWeight: 900, color: "#f4fbff" }}>
                   Fleet
                 </div>
-                <div style={{ fontSize: isMobile ? 15 : 17, fontWeight: 800, color: "#1d4ed8" }}>
+                <div style={{ fontSize: isMobile ? 15 : 17, fontWeight: 800, color: "#68e2ff" }}>
                   {currentShipLength
                     ? `Ship ${placedShips.length + 1} of ${SHIP_LENGTHS.length} - length ${currentShipLength}`
                     : "Fleet complete"}
                 </div>
               </div>
 
-              <div style={{ marginTop: 8, color: "#6b7280", lineHeight: 1.55, fontSize: isMobile ? 13 : 15 }}>
+              <div style={{ marginTop: 8, color: "#83b0c8", lineHeight: 1.55, fontSize: isMobile ? 13 : 15 }}>
                 {currentShipLength
                   ? `Place ship of length ${currentShipLength}.`
                   : "All ships placed. Ready to battle."}
@@ -1290,11 +1603,44 @@ export default function App() {
                 currentIndex={placedShips.length}
               />
 
+              <div
+                style={{
+                  marginTop: 16,
+                  display: "grid",
+                  gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                  gap: 10,
+                }}
+              >
+                {[
+                  ["Orientation", orientation === "horizontal" ? "Horizontal" : "Vertical"],
+                  ["Placed", `${placedShips.length}/${SHIP_LENGTHS.length}`],
+                  ["Status", placementComplete ? "Ready to deploy" : "Awaiting placement"],
+                ].map(([label, value]) => (
+                  <div
+                    key={label}
+                    style={{
+                      borderRadius: 16,
+                      padding: "12px 14px",
+                      background: "rgba(5, 19, 31, 0.7)",
+                      border: "1px solid rgba(95,224,255,0.12)",
+                    }}
+                  >
+                    <div style={{ color: "#6edfff", fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase" }}>
+                      {label}
+                    </div>
+                    <div style={{ marginTop: 6, color: "#f4fbff", fontSize: 14, fontWeight: 800 }}>
+                      {value}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
               <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <PlacementActionButton
                   onClick={handleRotateShip}
                   icon="🔄"
                   label="Rotate"
+                  background="linear-gradient(180deg, rgba(10,54,81,1), rgba(6,25,42,1))"
                   animationKey={rotateAnimationKey}
                 />
 
@@ -1302,29 +1648,32 @@ export default function App() {
                   onClick={handleUndoShip}
                   icon="↩"
                   label="Undo"
-                  background="#6b7280"
+                  background="linear-gradient(180deg, rgba(52,77,95,1), rgba(20,35,49,1))"
                 />
 
                 <PlacementActionButton
                   onClick={handleResetPlacement}
                   icon="🧹"
                   label="Reset"
-                  background="#111827"
+                  background="linear-gradient(180deg, rgba(40,50,61,1), rgba(17,24,39,1))"
                 />
 
                 <button
                   onClick={handleSubmitShips}
                   disabled={!placementComplete}
                   style={{
-                    background: placementComplete ? "#15803d" : "#9ca3af",
+                    background: placementComplete
+                      ? "linear-gradient(180deg, rgba(255,135,61,1), rgba(142,61,17,1))"
+                      : "linear-gradient(180deg, rgba(83,95,107,1), rgba(46,55,64,1))",
                     color: "#ffffff",
-                    border: "none",
-                    borderRadius: 12,
-                    padding: "10px 14px",
+                    border: "1px solid rgba(255,198,158,0.18)",
+                    borderRadius: 16,
+                    padding: "12px 16px",
                     fontWeight: 800,
+                    letterSpacing: "0.06em",
                     cursor: placementComplete ? "pointer" : "default",
                     boxShadow: placementComplete
-                      ? "0 0 0 3px rgba(34,197,94,0.22), 0 10px 18px rgba(21,128,61,0.25)"
+                      ? "0 0 0 1px rgba(255,164,104,0.24), 0 16px 26px rgba(0,0,0,0.28)"
                       : "none",
                     transform: placementComplete ? "translateY(-1px)" : "none",
                   }}
@@ -1337,10 +1686,11 @@ export default function App() {
                 <div
                   style={{
                     marginTop: 18,
-                    borderRadius: 12,
+                    borderRadius: 16,
                     padding: 14,
-                    border: `2px solid ${error ? "#fecaca" : "#bfdbfe"}`,
-                    color: error ? "#991b1b" : "#1d4ed8",
+                    border: `1px solid ${error ? "rgba(255,149,149,0.34)" : "rgba(104,226,255,0.22)"}`,
+                    background: error ? "rgba(90,20,20,0.34)" : "rgba(7,36,56,0.65)",
+                    color: error ? "#ffc0c0" : "#9cefff",
                     fontWeight: 700,
                   }}
                 >
@@ -1350,10 +1700,10 @@ export default function App() {
             </div>
 
             <div style={cardStyle()}>
-              <div style={{ fontSize: isMobile ? 20 : 22, fontWeight: 900, color: "#111827" }}>
+              <div style={{ fontSize: isMobile ? 20 : 22, fontWeight: 900, color: "#f4fbff" }}>
                 Board
               </div>
-              <div style={{ marginTop: 8, color: "#6b7280", fontSize: isMobile ? 12 : 14 }}>
+              <div style={{ marginTop: 8, color: "#83b0c8", fontSize: isMobile ? 12 : 14 }}>
                 {isMobile
                   ? "Tap to preview, tap again to place. Ships cannot overlap."
                   : "Hover to preview. Ships cannot overlap."}
@@ -1370,6 +1720,20 @@ export default function App() {
                     position: "relative",
                   }}
                 >
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      position: "absolute",
+                      left: 18,
+                      top: 18,
+                      right: 0,
+                      bottom: 0,
+                      borderRadius: 12,
+                      border: "1px solid rgba(94,224,255,0.08)",
+                      boxShadow: "0 0 0 12px rgba(94,224,255,0.015)",
+                      pointerEvents: "none",
+                    }}
+                  />
                   <ShipSilhouettes
                     ships={placedShips}
                     cellSize={placementCellSize}
@@ -1381,7 +1745,7 @@ export default function App() {
                       key={`placement-col-${x}`}
                       style={{
                         height: 18,
-                        color: "#64748b",
+                        color: "#77cce6",
                         fontSize: 11,
                         fontWeight: 900,
                         display: "grid",
@@ -1402,8 +1766,8 @@ export default function App() {
                     const invalidPreview = previewed && !placementPreview.valid;
                     const validPreview = previewed && placementPreview.valid;
 
-                    let background = "#ffffff";
-                    let border = "1px solid #cbd5e1";
+                    let background = "rgba(6, 28, 47, 0.88)";
+                    let border = "1px solid rgba(76, 166, 206, 0.5)";
 
                     if (occupied) {
                       background = "transparent";
@@ -1411,13 +1775,13 @@ export default function App() {
                     }
 
                     if (validPreview) {
-                      background = "#bfdbfe";
-                      border = "2px solid #2563eb";
+                      background = "rgba(12, 81, 111, 0.95)";
+                      border = "1px solid rgba(94, 224, 255, 0.78)";
                     }
 
                     if (invalidPreview) {
-                      background = "#fee2e2";
-                      border = "2px solid #dc2626";
+                      background = "rgba(108, 32, 22, 0.9)";
+                      border = "1px solid rgba(255, 133, 116, 0.86)";
                     }
 
                     return (
@@ -1427,7 +1791,7 @@ export default function App() {
                             style={{
                               width: 18,
                               height: placementCellSize,
-                              color: "#64748b",
+                              color: "#77cce6",
                               fontSize: 11,
                               fontWeight: 900,
                               display: "grid",
@@ -1462,6 +1826,11 @@ export default function App() {
                           boxSizing: "border-box",
                           position: "relative",
                           zIndex: 1,
+                          boxShadow: validPreview
+                            ? "0 0 0 1px rgba(94,224,255,0.12), inset 0 0 12px rgba(94,224,255,0.08)"
+                            : invalidPreview
+                              ? "0 0 12px rgba(255,120,80,0.08)"
+                              : "none",
                         }}
                       />
                       </React.Fragment>
@@ -1485,16 +1854,17 @@ export default function App() {
       <div
         style={{
           minHeight: "100vh",
-          background: "#eef3fb",
+          background:
+            "radial-gradient(circle at 50% 70%, rgba(67,197,255,0.16), transparent 18%), linear-gradient(180deg, #03101d 0%, #06192a 38%, #07243b 68%, #020b15 100%)",
           display: "grid",
           placeItems: "center",
-          fontFamily: "Arial, sans-serif",
+          fontFamily: "'Segoe UI', 'Trebuchet MS', Arial, sans-serif",
           padding: 20,
           boxSizing: "border-box",
         }}
       >
         <div style={cardStyle()}>
-          <div style={{ fontSize: 28, fontWeight: 900, color: "#111827" }}>
+          <div style={{ fontSize: 28, fontWeight: 900, color: "#f4fbff" }}>
             Entering room...
           </div>
         </div>

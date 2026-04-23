@@ -52,10 +52,13 @@ export default function WaitingRoomScreen({
       style={{
         minHeight: "100vh",
         background:
-          "linear-gradient(160deg, #0f766e 0%, #155e75 45%, #1f2937 100%)",
+          "radial-gradient(circle at 50% 70%, rgba(67,197,255,0.16), transparent 18%), linear-gradient(180deg, #03101d 0%, #06192a 38%, #07243b 68%, #020b15 100%)",
         padding: 16,
         boxSizing: "border-box",
-        fontFamily: "Arial, sans-serif",
+        color: "#e9f8ff",
+        fontFamily: "'Segoe UI', 'Trebuchet MS', Arial, sans-serif",
+        position: "relative",
+        overflow: "hidden",
       }}
     >
       <style>
@@ -69,16 +72,52 @@ export default function WaitingRoomScreen({
             0% { transform: translateY(8px); opacity: 0; }
             100% { transform: translateY(0); opacity: 1; }
           }
+
+          @keyframes roomSweep {
+            0% { transform: translateX(-50%) rotate(0deg); }
+            100% { transform: translateX(-50%) rotate(360deg); }
+          }
         `}
       </style>
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: -220,
+          width: 700,
+          height: 700,
+          transform: "translateX(-50%)",
+          borderRadius: "50%",
+          border: "1px solid rgba(95,224,255,0.08)",
+          boxShadow: "0 0 0 70px rgba(95,224,255,0.02), 0 0 0 150px rgba(95,224,255,0.012)",
+          opacity: 0.9,
+        }}
+      />
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: -220,
+          width: 760,
+          height: 760,
+          transform: "translateX(-50%)",
+          borderRadius: "50%",
+          background:
+            "conic-gradient(from 0deg, rgba(95,224,255,0.18), rgba(95,224,255,0.02) 16%, transparent 26%, transparent 100%)",
+          animation: "roomSweep 14s linear infinite",
+          opacity: 0.42,
+        }}
+      />
       <div style={{ maxWidth: 900, margin: "0 auto" }}>
         <div
           style={{
-            background: "rgba(236, 253, 245, 0.94)",
-            borderRadius: 18,
+            background: "linear-gradient(180deg, rgba(8,31,51,0.97), rgba(4,18,31,0.96))",
+            borderRadius: 22,
             padding: 18,
-            boxShadow: "0 16px 36px rgba(15,23,42,0.26)",
-            border: "1px solid rgba(204,251,241,0.72)",
+            boxShadow: "0 18px 38px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(95,224,255,0.04)",
+            border: "1px solid rgba(95,224,255,0.16)",
           }}
         >
           <div
@@ -91,14 +130,17 @@ export default function WaitingRoomScreen({
             }}
           >
             <div style={{ flex: "1 1 320px", minWidth: 0 }}>
-              <div style={{ fontSize: 28, fontWeight: 900, color: "#0f172a" }}>
+              <div style={{ color: "#5fe0ff", fontSize: 12, letterSpacing: "0.22em", fontWeight: 800, textTransform: "uppercase" }}>
+                Multiplayer Staging
+              </div>
+              <div style={{ fontSize: 28, fontWeight: 900, color: "#f4fbff", marginTop: 8 }}>
                 {title}
               </div>
 
               <div
                 style={{
                   marginTop: 8,
-                  color: "#475569",
+                  color: "#83b0c8",
                   fontSize: 14,
                   lineHeight: 1.35,
                 }}
@@ -111,7 +153,7 @@ export default function WaitingRoomScreen({
               <div
                 style={{
                   marginTop: 12,
-                  color: "#0f766e",
+                  color: "#5fe0ff",
                   textAlign: "center",
                   fontSize: 13,
                   fontWeight: 800,
@@ -126,7 +168,7 @@ export default function WaitingRoomScreen({
                   fontSize: "clamp(34px, 11vw, 60px)",
                   fontWeight: 900,
                   letterSpacing: "clamp(3px, 0.9vw, 7px)",
-                  color: "#0f766e",
+                  color: "#67e3ff",
                   lineHeight: 1,
                   textAlign: "center",
                   wordBreak: "break-word",
@@ -171,6 +213,9 @@ export default function WaitingRoomScreen({
                   ? "Launching battle"
                   : `Ready ${readyCount} / ${players.length}`}
             </div>
+            <div style={statStyle("rgba(6, 31, 48, 0.9)", "#8ce9ff")}>
+              {roomView?.you?.isHost ? "You are host" : "Crew station linked"}
+            </div>
           </div>
 
           {isLobby && (
@@ -181,17 +226,17 @@ export default function WaitingRoomScreen({
                 marginTop: 18,
                 width: "100%",
                 background: canStartPlacement
-                  ? "linear-gradient(135deg, #0f766e 0%, #14b8a6 58%, #5eead4 100%)"
-                  : "#9ca3af",
+                  ? "linear-gradient(180deg, rgba(255,135,61,1), rgba(142,61,17,1))"
+                  : "linear-gradient(180deg, rgba(83,95,107,1), rgba(46,55,64,1))",
                 color: "#ffffff",
-                border: "none",
-                borderRadius: 8,
+                border: "1px solid rgba(255,198,158,0.18)",
+                borderRadius: 16,
                 padding: "16px 16px",
                 fontWeight: 900,
                 fontSize: 17,
                 cursor: canStartPlacement ? "pointer" : "default",
                 boxShadow: canStartPlacement
-                  ? "0 0 0 3px rgba(20,184,166,0.24), 0 14px 24px rgba(15,118,110,0.28)"
+                  ? "0 0 0 1px rgba(255,164,104,0.24), 0 16px 26px rgba(0,0,0,0.28)"
                   : "none",
               }}
             >
@@ -205,10 +250,11 @@ export default function WaitingRoomScreen({
             <div
               style={{
                 marginTop: 18,
-                borderRadius: 8,
+                borderRadius: 16,
                 padding: 14,
-                border: `2px solid ${error ? "#fecaca" : "#bfdbfe"}`,
-                color: error ? "#991b1b" : "#1d4ed8",
+                border: `1px solid ${error ? "rgba(255,149,149,0.34)" : "rgba(104,226,255,0.22)"}`,
+                background: error ? "rgba(90,20,20,0.34)" : "rgba(7,36,56,0.65)",
+                color: error ? "#ffc0c0" : "#9cefff",
                 fontWeight: 700,
               }}
             >
@@ -225,10 +271,10 @@ export default function WaitingRoomScreen({
               gap: 12,
             }}
           >
-            <div style={{ fontSize: 20, fontWeight: 900, color: "#0f172a" }}>
+            <div style={{ fontSize: 20, fontWeight: 900, color: "#f4fbff" }}>
               Crew
             </div>
-            <div style={{ color: "#0f766e", fontSize: 13, fontWeight: 800 }}>
+            <div style={{ color: "#5fe0ff", fontSize: 13, fontWeight: 800 }}>
               {players.length} aboard
             </div>
           </div>
@@ -253,24 +299,23 @@ export default function WaitingRoomScreen({
                   key={player.id}
                   style={{
                     border: positive ? "1px solid #99f6e4" : "1px solid #bae6fd",
-                    borderRadius: 8,
-                    padding: 14,
-                    display: "flex",
-                    justifyContent: "space-between",
+                    borderRadius: 18,
+                    padding: 16,
+                    display: "grid",
+                    gridTemplateColumns: "minmax(0, 1fr) auto",
                     alignItems: "center",
-                    gap: 12,
-                    flexWrap: "wrap",
-                    background: positive ? "rgba(204,251,241,0.72)" : "rgba(240,249,255,0.72)",
+                    gap: 16,
+                    background: positive ? "rgba(6, 49, 65, 0.78)" : "rgba(6, 31, 48, 0.78)",
                     animation: "crewArrive 0.22s ease-out",
-                    boxShadow: `inset 4px 0 0 ${accent.border}`,
+                    boxShadow: `inset 4px 0 0 ${accent.border}, 0 16px 26px rgba(0,0,0,0.16)`,
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
                     <div
                       style={{
                         minWidth: 48,
-                        height: 52,
-                        borderRadius: 8,
+                        height: 56,
+                        borderRadius: 12,
                         background: accent.bg,
                         color: accent.text,
                         border: `1px solid ${accent.border}`,
@@ -281,6 +326,7 @@ export default function WaitingRoomScreen({
                         gap: 2,
                         fontWeight: 900,
                         lineHeight: 1,
+                        boxShadow: "0 10px 18px rgba(0,0,0,0.14)",
                       }}
                     >
                       <span style={{ fontSize: 16 }}>{identity.number}</span>
@@ -288,8 +334,8 @@ export default function WaitingRoomScreen({
                         {player.isHost ? "HOST" : "CREW"}
                       </span>
                     </div>
-                    <div>
-                      <div style={{ fontWeight: 900, color: "#0f172a", fontSize: 17 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 900, color: "#f4fbff", fontSize: 17 }}>
                         {identity.label}
                       </div>
                       {!isLobby && (
@@ -320,7 +366,7 @@ export default function WaitingRoomScreen({
                           <span
                             style={{
                               marginLeft: 4,
-                              color: "#334155",
+                              color: "#9fc6d8",
                               fontSize: 11,
                               fontWeight: 900,
                             }}
@@ -329,7 +375,7 @@ export default function WaitingRoomScreen({
                           </span>
                         </div>
                       )}
-                      <div style={{ marginTop: 2, color: "#0f766e", fontSize: 12, fontWeight: 800 }}>
+                      <div style={{ marginTop: 2, color: "#5fe0ff", fontSize: 12, fontWeight: 800 }}>
                         {player.isHost ? "👑 HOST" : "CREW"}
                       </div>
                     </div>
@@ -340,12 +386,14 @@ export default function WaitingRoomScreen({
                       display: "inline-flex",
                       alignItems: "center",
                       gap: 8,
-                      background: positive ? "#dcfce7" : "#fef3c7",
-                      color: positive ? "#166534" : "#92400e",
+                      background: positive ? "rgba(14, 92, 58, 0.28)" : "rgba(117, 72, 16, 0.3)",
+                      color: positive ? "#86f0ba" : "#ffcf84",
                       padding: "6px 12px",
                       borderRadius: 999,
                       fontWeight: 800,
                       fontSize: 12,
+                      justifySelf: "end",
+                      whiteSpace: "nowrap",
                     }}
                   >
                     <StatusDot spinning={isLobby ? !player.connected : !player.ready} />
@@ -388,13 +436,17 @@ function StatusDot({ spinning }) {
 
 function buttonStyle(background) {
   return {
-    background,
-    color: "#ffffff",
-    border: "none",
-    borderRadius: 8,
+    background:
+      background === "#111827"
+        ? "linear-gradient(180deg, rgba(8,37,60,0.94), rgba(4,17,29,0.94))"
+        : background,
+    color: "#eefbff",
+    border: "1px solid rgba(96,227,255,0.18)",
+    borderRadius: 14,
     padding: "12px 18px",
     fontWeight: 800,
     cursor: "pointer",
+    boxShadow: "0 14px 28px rgba(0,0,0,0.22)",
   };
 }
 
@@ -402,9 +454,10 @@ function statStyle(background, color) {
   return {
     background,
     color,
-    borderRadius: 8,
+    borderRadius: 14,
     padding: "12px 14px",
     fontWeight: 900,
     textAlign: "center",
+    border: "1px solid rgba(255,255,255,0.08)",
   };
 }

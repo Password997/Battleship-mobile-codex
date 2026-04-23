@@ -213,12 +213,13 @@ function Toast({ item }) {
   return (
     <div
       style={{
-        background: "#111827",
-        color: "#ffffff",
-        borderRadius: 14,
+        background: "linear-gradient(180deg, rgba(8,31,51,0.96), rgba(4,18,31,0.96))",
+        color: "#f3fbff",
+        borderRadius: 16,
         padding: "12px 16px",
         minWidth: 240,
-        boxShadow: "0 10px 24px rgba(0,0,0,0.22)",
+        border: "1px solid rgba(99,225,255,0.22)",
+        boxShadow: "0 14px 34px rgba(0,0,0,0.36), inset 0 0 0 1px rgba(99,225,255,0.08)",
         fontWeight: 700,
       }}
     >
@@ -329,13 +330,31 @@ export default function BattleScreen({
     <div
       style={{
         minHeight: "100vh",
-        background: "#f4f6fb",
+        background:
+          "radial-gradient(circle at 50% 70%, rgba(67,197,255,0.16), transparent 18%), linear-gradient(180deg, #03101d 0%, #06192a 38%, #07243b 68%, #020b15 100%)",
         padding: isMobile ? 10 : 18,
         boxSizing: "border-box",
-        fontFamily: "Arial, sans-serif",
+        color: "#e9f8ff",
+        fontFamily: "'Segoe UI', 'Trebuchet MS', Arial, sans-serif",
         position: "relative",
+        overflow: "hidden",
       }}
     >
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: -280,
+          width: 860,
+          height: 860,
+          transform: "translateX(-50%)",
+          borderRadius: "50%",
+          boxShadow: "0 0 0 80px rgba(95,224,255,0.02), 0 0 0 180px rgba(95,224,255,0.012)",
+          border: "1px solid rgba(95,224,255,0.08)",
+          pointerEvents: "none",
+        }}
+      />
       {false && roomView?.status === "finished" && winnerOpen && roomView?.winnerName && (
         <div
           style={{
@@ -409,23 +428,25 @@ export default function BattleScreen({
         >
           <div
             style={{
-              background: "linear-gradient(180deg, #ffffff 0%, #eff6ff 100%)",
-              borderRadius: 18,
+              background: "linear-gradient(180deg, rgba(7,31,51,0.99), rgba(4,18,31,0.98))",
+              borderRadius: 24,
               padding: isMobile ? 18 : 24,
               width: "min(94vw, 520px)",
-              boxShadow: "0 18px 40px rgba(0,0,0,0.24)",
+              boxShadow: "0 24px 60px rgba(0,0,0,0.34)",
               animation: "winnerPulse 0.55s ease-out",
-              border: "1px solid #bfdbfe",
+              border: "1px solid rgba(95,224,255,0.18)",
             }}
           >
             <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 42, fontWeight: 900, color: "#f59e0b" }}>WIN</div>
+              <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: "0.28em", color: "#6fe2ff", textTransform: "uppercase" }}>
+                Victory signal
+              </div>
               <div
                 style={{
                   marginTop: 8,
                   fontSize: isMobile ? 25 : 30,
                   fontWeight: 900,
-                  color: "#111827",
+                  color: "#f4fbff",
                 }}
               >
                 {roomView.winnerName} wins!
@@ -433,7 +454,7 @@ export default function BattleScreen({
               <div
                 style={{
                   marginTop: 6,
-                  color: "#475569",
+                  color: "#87b8cf",
                   fontSize: 14,
                   fontWeight: 800,
                 }}
@@ -455,24 +476,24 @@ export default function BattleScreen({
                   <div
                     key={player.id}
                     style={{
-                      border: winner ? `2px solid ${accent.border}` : "1px solid #dbeafe",
-                      borderRadius: 8,
-                      padding: "10px 12px",
-                      background: winner ? accent.bg : "#ffffff",
+                      border: winner ? `2px solid rgba(110,226,255,0.55)` : "1px solid rgba(95,224,255,0.14)",
+                      borderRadius: 16,
+                      padding: "12px 14px",
+                      background: winner ? "linear-gradient(180deg, rgba(11,73,96,0.95), rgba(5,29,46,0.95))" : "rgba(5, 18, 31, 0.76)",
                       display: "grid",
                       gridTemplateColumns: "auto 1fr auto",
                       gap: 10,
                       alignItems: "center",
-                      boxShadow: winner ? "0 8px 18px rgba(37,99,235,0.16)" : "none",
+                      boxShadow: winner ? "0 14px 28px rgba(0,0,0,0.24)" : "none",
                     }}
                   >
                     <div
                       style={{
                         width: 34,
                         height: 34,
-                        borderRadius: 8,
-                        background: winner ? accent.border : "#e0f2fe",
-                        color: winner ? "#ffffff" : "#075985",
+                        borderRadius: 10,
+                        background: winner ? "rgba(255,255,255,0.14)" : "rgba(95,224,255,0.08)",
+                        color: "#eefbff",
                         display: "grid",
                         placeItems: "center",
                         fontWeight: 900,
@@ -482,16 +503,16 @@ export default function BattleScreen({
                       #{index + 1}
                     </div>
                     <div>
-                      <div style={{ fontWeight: 900, color: "#111827", fontSize: 16 }}>
+                      <div style={{ fontWeight: 900, color: "#f4fbff", fontSize: 16 }}>
                         {identity.number} {identity.label}
                       </div>
-                      <div style={{ marginTop: 3, color: "#64748b", fontWeight: 800, fontSize: 12 }}>
+                      <div style={{ marginTop: 3, color: "#84b6cb", fontWeight: 800, fontSize: 12 }}>
                         {winner ? "Winner" : player.defeated ? "Defeated" : "Survived"}
                       </div>
                     </div>
                     <div
                       style={{
-                        color: shipsLeft > 0 ? "#166534" : "#991b1b",
+                        color: shipsLeft > 0 ? "#86f0ba" : "#ffc0c0",
                         fontWeight: 900,
                         fontSize: 12,
                         textAlign: "right",
@@ -517,10 +538,10 @@ export default function BattleScreen({
               <button
                 onClick={() => setWinnerOpen(false)}
                 style={{
-                  background: "#2563eb",
-                  color: "#ffffff",
-                  border: "none",
-                  borderRadius: 8,
+                  background: "linear-gradient(180deg, rgba(15,94,125,1), rgba(6,35,57,1))",
+                  color: "#eefbff",
+                  border: "1px solid rgba(110,226,255,0.24)",
+                  borderRadius: 12,
                   padding: "12px 14px",
                   fontWeight: 900,
                   cursor: "pointer",
@@ -534,10 +555,10 @@ export default function BattleScreen({
                   onBack();
                 }}
                 style={{
-                  background: "#111827",
-                  color: "#ffffff",
-                  border: "none",
-                  borderRadius: 8,
+                  background: "rgba(7,31,51,0.96)",
+                  color: "#eefbff",
+                  border: "1px solid rgba(95,224,255,0.16)",
+                  borderRadius: 12,
                   padding: "12px 14px",
                   fontWeight: 900,
                   cursor: "pointer",
@@ -686,6 +707,27 @@ export default function BattleScreen({
       <div
         style={{
           position: "fixed",
+          top: 14,
+          left: 14,
+          zIndex: 45,
+          padding: "8px 12px",
+          borderRadius: 999,
+          border: "1px solid rgba(255,185,129,0.28)",
+          background: "linear-gradient(180deg, rgba(255,135,61,0.94), rgba(142,61,17,0.94))",
+          color: "#fff7f1",
+          fontSize: 11,
+          fontWeight: 900,
+          letterSpacing: "0.14em",
+          textTransform: "uppercase",
+          boxShadow: "0 14px 28px rgba(0,0,0,0.24)",
+        }}
+      >
+        Local Preview
+      </div>
+
+      <div
+        style={{
+          position: "fixed",
           top: 16,
           right: 16,
           zIndex: 50,
@@ -787,9 +829,10 @@ export default function BattleScreen({
             <div
               style={{
                 padding: "10px 14px",
-                borderRadius: 12,
-                background: "#eef2ff",
-                color: "#3730a3",
+                borderRadius: 14,
+                background: "rgba(8,38,62,0.82)",
+                color: "#86e8ff",
+                border: "1px solid rgba(106,231,255,0.16)",
                 fontWeight: 800,
                 fontSize: isMobile ? 12 : 14,
               }}
@@ -804,10 +847,10 @@ export default function BattleScreen({
               position: "absolute",
               top: 10,
               right: 10,
-              background: "#111827",
-              color: "#ffffff",
-              border: "none",
-              borderRadius: 8,
+              background: "linear-gradient(180deg, rgba(8,37,60,0.94), rgba(4,17,29,0.94))",
+              color: "#eefbff",
+              border: "1px solid rgba(96,227,255,0.18)",
+              borderRadius: 10,
               padding: isMobile ? "7px 10px" : "8px 12px",
               fontWeight: 800,
               fontSize: isMobile ? 12 : 13,
@@ -821,13 +864,14 @@ export default function BattleScreen({
 
         <div
           style={{
-            background: "#ffffff",
-            borderRadius: 18,
-            padding: 12,
-            boxShadow: "0 10px 24px rgba(0,0,0,0.08)",
-            display: "flex",
-            gap: 8,
-            flexWrap: "wrap",
+            background: "linear-gradient(180deg, rgba(8,31,51,0.96), rgba(4,18,31,0.94))",
+            borderRadius: 20,
+            padding: 14,
+            border: "1px solid rgba(95,224,255,0.16)",
+            boxShadow: "0 16px 32px rgba(0,0,0,0.28)",
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(132px, 1fr))",
+            gap: 10,
           }}
         >
           {players.map((player, index) => {
@@ -844,13 +888,15 @@ export default function BattleScreen({
               <div
                 key={player.id}
                 style={{
-                  border: isActive ? `2px solid ${accent.border}` : "1px solid #e5e7eb",
-                  borderRadius: 12,
-                  padding: "9px 12px",
-                  background: isActive ? accent.bg : "#ffffff",
+                  border: isActive
+                    ? `2px solid ${accent.border}`
+                    : "1px solid rgba(118,209,240,0.16)",
+                  borderRadius: 16,
+                  padding: "12px 12px 10px",
+                  background: isActive ? accent.bg : "rgba(5, 25, 41, 0.82)",
                   animation: isActive ? "turnPulse 1.2s ease-out infinite" : "none",
-                  minWidth: isMobile ? 96 : 118,
-                  boxShadow: `inset 4px 0 0 ${accent.border}`,
+                  minWidth: 0,
+                  boxShadow: `inset 4px 0 0 ${accent.border}, 0 12px 22px rgba(0,0,0,0.16)`,
                 }}
               >
                 <div
@@ -876,7 +922,7 @@ export default function BattleScreen({
                       style={{
                         marginTop: 3,
                         fontWeight: 900,
-                        color: "#111827",
+                        color: isActive ? "#111827" : "#edfaff",
                         fontSize: isMobile ? 13 : 16,
                         lineHeight: 1.1,
                       }}
@@ -901,8 +947,8 @@ export default function BattleScreen({
                 </div>
                 <div
                   style={{
-                    marginTop: 7,
-                    color: player.defeated ? "#991b1b" : "#166534",
+                    marginTop: 10,
+                    color: player.defeated ? "#ff8e8e" : "#7be7a0",
                     fontWeight: 700,
                     fontSize: 12,
                   }}
@@ -917,10 +963,11 @@ export default function BattleScreen({
         {isMobile && (
           <div
             style={{
-              background: "#ffffff",
-              borderRadius: 8,
+              background: "linear-gradient(180deg, rgba(8,31,51,0.96), rgba(4,18,31,0.94))",
+              borderRadius: 14,
               padding: 6,
-              boxShadow: "0 10px 24px rgba(0,0,0,0.08)",
+              border: "1px solid rgba(95,224,255,0.16)",
+              boxShadow: "0 16px 32px rgba(0,0,0,0.28)",
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
               gap: 6,
@@ -940,13 +987,15 @@ export default function BattleScreen({
                   onClick={() => setActiveMobileBoard(value)}
                   style={{
                     border: "none",
-                    borderRadius: 8,
+                    borderRadius: 10,
                     padding: "11px 10px",
-                    background: active ? "#2563eb" : "#eff6ff",
-                    color: active ? "#ffffff" : "#1d4ed8",
+                    background: active
+                      ? "linear-gradient(180deg, rgba(16,87,120,1), rgba(5,33,56,1))"
+                      : "rgba(8,37,60,0.76)",
+                    color: active ? "#f2fcff" : "#7ecce3",
                     fontWeight: 900,
                     fontSize: 14,
-                    boxShadow: active ? "0 6px 14px rgba(37,99,235,0.24)" : "none",
+                    boxShadow: active ? "0 10px 22px rgba(44,178,255,0.18)" : "none",
                   }}
                 >
                   {label}
@@ -969,31 +1018,31 @@ export default function BattleScreen({
               background:
                 roomView?.status === "battle"
                   ? roomView?.isYourTurn
-                    ? "#dbeafe"
-                    : "#eff6ff"
-                  : "#ffffff",
+                    ? "linear-gradient(180deg, rgba(7,37,60,0.98), rgba(4,19,32,0.98))"
+                    : "linear-gradient(180deg, rgba(6,24,40,0.96), rgba(4,17,29,0.96))"
+                  : "linear-gradient(180deg, rgba(6,24,40,0.96), rgba(4,17,29,0.96))",
               border:
                 roomView?.status === "battle" && roomView?.isYourTurn
-                  ? "3px solid #2563eb"
-                  : "1px solid #bfdbfe",
+                  ? "2px solid rgba(90,230,255,0.45)"
+                  : "1px solid rgba(90,230,255,0.16)",
               borderRadius: 18,
               padding: isMobile ? 12 : 18,
               boxShadow:
                 roomView?.status === "battle" && roomView?.isYourTurn
-                  ? "0 0 0 3px rgba(37,99,235,0.16), 0 12px 28px rgba(37,99,235,0.18)"
-                  : "0 10px 24px rgba(0,0,0,0.08)",
+                  ? "0 0 0 1px rgba(90,230,255,0.22), 0 18px 36px rgba(0,0,0,0.32)"
+                  : "0 16px 30px rgba(0,0,0,0.24)",
               opacity:
                 roomView?.status === "battle" && !roomView?.isYourTurn
-                  ? 0.72
+                  ? 0.82
                   : 1,
               display: isMobile && activeMobileBoard !== "attack" ? "none" : "block",
             }}
           >
-            <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 900, color: "#111827" }}>
-              Attack
+            <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 900, color: "#f3fbff" }}>
+              Enemy Board
             </div>
-            <div style={{ marginTop: 8, color: "#6b7280", fontSize: isMobile ? 12 : 14 }}>
-              Yellow outline = sunk ship
+            <div style={{ marginTop: 8, color: "#86b4ca", fontSize: isMobile ? 12 : 14 }}>
+              Cyan scans mark active targeting. Ember glow confirms heavy damage.
             </div>
 
             <div
@@ -1081,7 +1130,7 @@ export default function BattleScreen({
                     key={`attack-col-${x}`}
                     style={{
                       height: 18,
-                      color: "#64748b",
+                      color: "#77cce6",
                       fontSize: 11,
                       fontWeight: 900,
                       display: "grid",
@@ -1113,26 +1162,26 @@ export default function BattleScreen({
                     pendingShot.x === x &&
                     pendingShot.y === y;
 
-                  let background = "#ffffff";
+                  let background = "rgba(6, 28, 47, 0.88)";
                   let label = "";
 
                   if (isSunkCell) {
-                    background = "#fde68a";
+                    background = "linear-gradient(180deg, #7a2f00, #29120a)";
                     label = "💥";
                   } else if (shot?.hit) {
-                    background = "#fecaca";
+                    background = "radial-gradient(circle, rgba(255,122,43,0.9) 0%, rgba(89,27,11,0.9) 70%)";
                     label = "🔥";
                   } else if (shot && !shot.hit) {
-                    background = "#ffffff";
+                    background = "rgba(9, 43, 66, 0.92)";
                     label = "💧";
                   } else if (isPending) {
-                    background = "#fde68a";
+                    background = "rgba(16, 87, 120, 0.92)";
                   }
 
                   if (canShoot) {
-                    background = "#eff6ff";
+                    background = "rgba(10, 45, 71, 0.95)";
                   } else if (!used && roomView?.status === "battle" && !roomView?.isYourTurn) {
-                    background = "#f8fafc";
+                    background = "rgba(6, 24, 38, 0.78)";
                   }
 
                   let animation = "none";
@@ -1153,7 +1202,7 @@ export default function BattleScreen({
                           style={{
                             width: 18,
                             height: cellSize,
-                            color: "#64748b",
+                            color: "#77cce6",
                             fontSize: 11,
                             fontWeight: 900,
                             display: "grid",
@@ -1174,21 +1223,21 @@ export default function BattleScreen({
                         width: cellSize,
                         height: cellSize,
                         border: isSunkCell
-                          ? "1px solid #facc15"
+                          ? "1px solid rgba(255, 181, 91, 0.95)"
                           : canShoot
-                            ? "2px solid #2563eb"
+                            ? "1px solid rgba(94, 224, 255, 0.72)"
                             : roomView?.status === "battle" && !roomView?.isYourTurn
-                              ? "1px solid #cbd5e1"
-                              : "1px solid #93c5fd",
+                              ? "1px solid rgba(72, 125, 151, 0.42)"
+                              : "1px solid rgba(76, 166, 206, 0.5)",
                         borderRadius: isMobile ? 6 : 8,
                         background,
                         fontWeight: 900,
                         fontSize: isMobile ? 16 : 20,
                         cursor: canShoot ? "crosshair" : "default",
                         boxShadow: isSunkCell
-                          ? "inset 0 0 0 3px #facc15"
+                          ? "inset 0 0 0 2px rgba(255, 177, 80, 0.65), 0 0 18px rgba(255, 133, 56, 0.14)"
                           : canShoot
-                            ? "0 0 0 2px rgba(37,99,235,0.1)"
+                            ? "0 0 0 1px rgba(94,224,255,0.12), inset 0 0 12px rgba(94,224,255,0.06)"
                             : "none",
                         animation,
                         display: "flex",
@@ -1210,18 +1259,19 @@ export default function BattleScreen({
 
           <div
             style={{
-              background: "#ffffff",
+              background: "linear-gradient(180deg, rgba(6,24,40,0.96), rgba(4,17,29,0.96))",
               borderRadius: 18,
               padding: isMobile ? 12 : 18,
-              boxShadow: "0 10px 24px rgba(0,0,0,0.08)",
+              border: "1px solid rgba(90,230,255,0.16)",
+              boxShadow: "0 16px 30px rgba(0,0,0,0.24)",
               display: isMobile && activeMobileBoard !== "ships" ? "none" : "block",
             }}
           >
-            <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 900, color: "#111827" }}>
-              My Ships
+            <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 900, color: "#f3fbff" }}>
+              Your Board
             </div>
-            <div style={{ marginTop: 8, color: "#6b7280", fontSize: isMobile ? 12 : 14 }}>
-              Blue = ship - Fire = hit - Water = miss - Explosion = sunk
+            <div style={{ marginTop: 8, color: "#86b4ca", fontSize: isMobile ? 12 : 14 }}>
+              Fleet silhouettes hold position while hits, misses and sunk states stay readable.
             </div>
 
             <div
@@ -1253,7 +1303,7 @@ export default function BattleScreen({
                     key={`defense-col-${x}`}
                     style={{
                       height: 18,
-                      color: "#64748b",
+                      color: "#77cce6",
                       fontSize: 11,
                       fontWeight: 900,
                       display: "grid",
@@ -1277,8 +1327,8 @@ export default function BattleScreen({
                   const isSunk = takenShot?.result === "sunk" || mySunkCells.has(cellKey);
                   const flashType = flashCells?.defense?.[cellKey] || null;
 
-                  let background = "#ffffff";
-                  let color = "#111827";
+                  let background = "rgba(6, 28, 47, 0.88)";
+                  let color = "#effbff";
                   let label = "";
 
                   if (isShip) {
@@ -1286,19 +1336,21 @@ export default function BattleScreen({
                   }
 
                   if (isMiss && !isShip) {
-                    background = "#ffffff";
+                    background = "rgba(9, 43, 66, 0.92)";
                     label = "💧";
                   }
 
                   if (isHit) {
-                    background = isGlobalHit ? "#fee2e2" : "#ef4444";
-                    color = isGlobalHit ? "#991b1b" : "#ffffff";
+                    background = isGlobalHit
+                      ? "radial-gradient(circle, rgba(255,168,122,0.9) 0%, rgba(117,34,17,0.92) 70%)"
+                      : "radial-gradient(circle, rgba(255,122,43,0.9) 0%, rgba(89,27,11,0.94) 70%)";
+                    color = "#ffffff";
                     label = "🔥";
                   }
 
                   if (isSunk) {
-                    background = "#fde68a";
-                    color = "#111827";
+                    background = "linear-gradient(180deg, #7a2f00, #29120a)";
+                    color = "#fff0d7";
                     label = "💥";
                   }
 
@@ -1316,7 +1368,7 @@ export default function BattleScreen({
                           style={{
                             width: 18,
                             height: cellSize,
-                            color: "#64748b",
+                            color: "#77cce6",
                             fontSize: 11,
                             fontWeight: 900,
                             display: "grid",
@@ -1332,7 +1384,7 @@ export default function BattleScreen({
                       style={{
                         width: cellSize,
                         height: cellSize,
-                        border: "1px solid #cbd5e1",
+                        border: "1px solid rgba(76, 166, 206, 0.5)",
                         borderRadius: 6,
                         background,
                         color,
@@ -1345,7 +1397,7 @@ export default function BattleScreen({
                         position: "relative",
                         zIndex: 1,
                         boxShadow: isSunk
-                          ? "inset 0 0 0 3px #facc15"
+                          ? "inset 0 0 0 2px rgba(255, 177, 80, 0.65), 0 0 18px rgba(255, 133, 56, 0.14)"
                           : "none",
                         animation,
                       }}
