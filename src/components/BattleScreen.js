@@ -1,5 +1,24 @@
 import React, { useEffect, useMemo, useState } from "react";
 
+const FLEET_SPRITE_URL = "/assets/fleet3.png";
+const FLEET_SPRITE_SOURCE_WIDTH = 1024;
+const FLEET_SPRITE_SOURCE_HEIGHT = 1536;
+const FLEET_ART_SPECS = [
+  { length: 5, x: 40, y: 35, width: 900, height: 255 },
+  { length: 4, x: 120, y: 405, width: 700, height: 180 },
+  { length: 3, x: 48, y: 665, width: 515, height: 145 },
+  { length: 3, x: 48, y: 665, width: 515, height: 145 },
+  { length: 2, x: 666, y: 668, width: 292, height: 116 },
+];
+const EMOGY_SPRITE_URL = "/assets/emogy.png";
+const EMOGY_SPRITE_SOURCE_WIDTH = 1402;
+const EMOGY_SPRITE_SOURCE_HEIGHT = 1122;
+const EFFECT_ART_SPECS = {
+  hit: { x: 1088, y: 24, width: 256, height: 250 },
+  miss: { x: 1066, y: 358, width: 272, height: 206 },
+  sunk: { x: 1080, y: 642, width: 250, height: 210 },
+};
+
 const PLAYER_COLORS = [
   { bg: "#dbeafe", border: "#2563eb", text: "#1d4ed8" },
   { bg: "#dcfce7", border: "#16a34a", text: "#166534" },
@@ -88,7 +107,72 @@ function getShipBounds(ship, cellSize, gap) {
   return { left, top, width, height, horizontal };
 }
 
-function ShipSilhouettes({ ships, sunkShipIndexes = [], cellSize, gap, allSunk = false }) {
+function FleetSprite({ spec, width, height, rotate = false, dimmed = false, sunk = false }) {
+  if (!spec) return null;
+
+  const scale = Math.min(width / spec.width, height / spec.height);
+
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        width: spec.width * scale,
+        height: spec.height * scale,
+        backgroundImage: `url(${FLEET_SPRITE_URL})`,
+        backgroundRepeat: "no-repeat",
+        backgroundSize: `${FLEET_SPRITE_SOURCE_WIDTH * scale}px ${FLEET_SPRITE_SOURCE_HEIGHT * scale}px`,
+        backgroundPosition: `${-spec.x * scale}px ${-spec.y * scale}px`,
+        transform: rotate ? "rotate(90deg)" : "none",
+        transformOrigin: "center center",
+        filter: [
+          dimmed ? "saturate(0.46) brightness(0.64)" : "drop-shadow(0 8px 18px rgba(0,0,0,0.28))",
+          sunk ? "sepia(0.36) saturate(1.08) brightness(0.82) drop-shadow(0 0 10px rgba(249,115,22,0.34))" : "",
+        ]
+          .filter(Boolean)
+          .join(" "),
+        opacity: dimmed ? 0.54 : 1,
+        pointerEvents: "none",
+      }}
+    />
+  );
+}
+
+function EffectSprite({ kind, cellSize, scale = 1, dimmed = false }) {
+  const spec = EFFECT_ART_SPECS[kind];
+  if (!spec) return null;
+
+  const frameSize = Math.max(cellSize * scale, 18);
+  const drawScale = Math.min(frameSize / spec.width, frameSize / spec.height);
+
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: "absolute",
+        left: "50%",
+        top: "50%",
+        width: spec.width * drawScale,
+        height: spec.height * drawScale,
+        backgroundImage: `url(${EMOGY_SPRITE_URL})`,
+        backgroundRepeat: "no-repeat",
+        backgroundSize: `${EMOGY_SPRITE_SOURCE_WIDTH * drawScale}px ${EMOGY_SPRITE_SOURCE_HEIGHT * drawScale}px`,
+        backgroundPosition: `${-spec.x * drawScale}px ${-spec.y * drawScale}px`,
+        transform: "translate(-50%, -50%)",
+        filter: dimmed ? "brightness(0.86)" : "none",
+        pointerEvents: "none",
+      }}
+    />
+  );
+}
+
+function ShipSilhouettes({
+  ships,
+  sunkShipIndexes = [],
+  cellSize,
+  gap,
+  allSunk = false,
+  flashingSunkShipIndexes = new Set(),
+}) {
   const sunk = new Set(sunkShipIndexes || []);
 
   return (
@@ -99,7 +183,14 @@ function ShipSilhouettes({ ships, sunkShipIndexes = [], cellSize, gap, allSunk =
 
         const bounds = getShipBounds(cells, cellSize, gap);
         const isSunk = allSunk || sunk.has(index);
-        const noseSize = Math.min(cellSize * 0.46, 16);
+        const isFlashingSunk = flashingSunkShipIndexes.has(index);
+        const spec = FLEET_ART_SPECS[index] || FLEET_ART_SPECS.find((item) => item.length === cells.length);
+        const artHeight = bounds.horizontal
+          ? Math.max(cellSize * 1.3, bounds.height + 10)
+          : Math.max(cellSize * 1.08, bounds.width + 10);
+        const artWidth = bounds.horizontal
+          ? Math.max(bounds.width + cellSize * 0.34, cellSize * 1.5)
+          : Math.max(bounds.height + cellSize * 0.34, cellSize * 1.5);
 
         return (
           <div
@@ -107,96 +198,50 @@ function ShipSilhouettes({ ships, sunkShipIndexes = [], cellSize, gap, allSunk =
             aria-hidden="true"
             style={{
               position: "absolute",
-              left: bounds.left,
-              top: bounds.top,
-              width: bounds.width,
-              height: bounds.height,
-              borderRadius: bounds.horizontal ? "999px 12px 12px 999px" : "999px 999px 12px 12px",
-              background: isSunk
-                ? "linear-gradient(135deg, #451a03 0%, #92400e 38%, #f59e0b 100%)"
-                : "linear-gradient(135deg, #bfdbfe 0%, #60a5fa 58%, #2563eb 100%)",
-              border: isSunk ? "3px solid #facc15" : "2px solid #1d4ed8",
-              boxShadow: isSunk
-                ? "inset 0 0 0 2px rgba(255,255,255,0.18), 0 0 0 2px rgba(250,204,21,0.25), 0 0 18px rgba(245,158,11,0.3)"
-                : "inset 0 0 0 2px rgba(255,255,255,0.28), 0 4px 10px rgba(37,99,235,0.18)",
+              left: bounds.left + (bounds.width - artWidth) / 2,
+              top: bounds.top + (bounds.height - artHeight) / 2,
+              width: artWidth,
+              height: artHeight,
+              display: "grid",
+              placeItems: "center",
               pointerEvents: "none",
-              zIndex: 0,
-              boxSizing: "border-box",
+              zIndex: 2,
             }}
           >
-            <div
-              style={{
-                position: "absolute",
-                left: bounds.horizontal ? 5 : "50%",
-                top: bounds.horizontal ? "50%" : 5,
-                width: bounds.horizontal ? noseSize : Math.max(8, bounds.width * 0.5),
-                height: bounds.horizontal ? Math.max(8, bounds.height * 0.5) : noseSize,
-                borderRadius: "999px",
-                background: isSunk ? "rgba(250,204,21,0.34)" : "rgba(255,255,255,0.44)",
-                transform: "translate(-50%, -50%)",
-              }}
+            <FleetSprite
+              spec={spec}
+              width={artWidth}
+              height={artHeight}
+              rotate={!bounds.horizontal}
+              dimmed={isSunk}
+              sunk={isSunk}
             />
-            <div
-              style={{
-                position: "absolute",
-                left: bounds.horizontal ? "18%" : "50%",
-                right: bounds.horizontal ? "14%" : "auto",
-                top: bounds.horizontal ? "50%" : "18%",
-                bottom: bounds.horizontal ? "auto" : "14%",
-                width: bounds.horizontal ? "auto" : 3,
-                height: bounds.horizontal ? 3 : "auto",
-                borderRadius: 999,
-                background: isSunk ? "rgba(15,23,42,0.44)" : "rgba(15,23,42,0.22)",
-                transform: "translate(-50%, -50%)",
-              }}
-            />
-            {isSunk && (
-              <>
-                <div
-                  style={{
-                    position: "absolute",
-                    left: bounds.horizontal ? "26%" : "38%",
-                    top: bounds.horizontal ? "18%" : "22%",
-                    width: bounds.horizontal ? "18%" : 3,
-                    height: bounds.horizontal ? 3 : "22%",
-                    borderRadius: 999,
-                    background: "rgba(254,242,242,0.72)",
-                    transform: "rotate(-28deg)",
-                    boxShadow: "0 0 8px rgba(254,242,242,0.45)",
-                  }}
-                />
-                <div
-                  style={{
-                    position: "absolute",
-                    right: bounds.horizontal ? "24%" : "30%",
-                    bottom: bounds.horizontal ? "20%" : "18%",
-                    width: bounds.horizontal ? "22%" : 3,
-                    height: bounds.horizontal ? 3 : "26%",
-                    borderRadius: 999,
-                    background: "rgba(15,23,42,0.5)",
-                    transform: "rotate(24deg)",
-                  }}
-                />
-                <div
-                  style={{
-                    position: "absolute",
-                    left: "50%",
-                    top: "50%",
-                    width: Math.min(18, cellSize * 0.5),
-                    height: Math.min(18, cellSize * 0.5),
-                    borderRadius: "50%",
-                    background: "rgba(15,23,42,0.32)",
-                    boxShadow: "0 0 12px rgba(15,23,42,0.25)",
-                    transform: "translate(-50%, -50%)",
-                  }}
-                />
-              </>
+            {isFlashingSunk && (
+              <EffectSprite
+                kind="sunk"
+                cellSize={Math.max(artHeight, artWidth)}
+                scale={0.68}
+                dimmed
+              />
             )}
           </div>
         );
       })}
     </>
   );
+}
+
+function buildFlashingShipIndexes(ships, flashMap, flashType = "sunk") {
+  const flashing = new Set();
+  (ships || []).forEach((ship, index) => {
+    const cells = Array.isArray(ship) ? ship : ship?.cells || [];
+    if (
+      cells.some((cell) => flashMap?.[keyOf(cell.x, cell.y)] === flashType)
+    ) {
+      flashing.add(index);
+    }
+  });
+  return flashing;
 }
 
 function buildRevealedSunkEnemyCells(revealedSunkShipCells) {
@@ -278,9 +323,15 @@ export default function BattleScreen({
   }, [isMobile, roomView?.isYourTurn, roomView?.status]);
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
+  }, [roomView?.status]);
+
+  useEffect(() => {
     if (!notifications?.length) return;
     const timers = notifications.map((n) =>
-      setTimeout(() => clearNotification(n.id), 3200)
+      setTimeout(() => clearNotification(n.id), n.durationMs ?? 3200)
     );
     return () => timers.forEach((t) => clearTimeout(t));
   }, [notifications, clearNotification]);
@@ -303,6 +354,14 @@ export default function BattleScreen({
   const revealedSunkEnemyCells = useMemo(
     () => buildRevealedSunkEnemyCells(you.revealedSunkShipCells || []),
     [you.revealedSunkShipCells]
+  );
+  const flashingEnemySunkShips = useMemo(
+    () => buildFlashingShipIndexes(you.revealedSunkShipCells || [], flashCells?.attack || {}, "sunk"),
+    [you.revealedSunkShipCells, flashCells?.attack]
+  );
+  const flashingDefenseSunkShips = useMemo(
+    () => buildFlashingShipIndexes(you.ships || [], flashCells?.defense || {}, "sunk"),
+    [you.ships, flashCells?.defense]
   );
 
   const aliveCount = players.filter((p) => !p.defeated).length;
@@ -1123,6 +1182,7 @@ export default function BattleScreen({
                   cellSize={cellSize}
                   gap={attackGap}
                   allSunk
+                  flashingSunkShipIndexes={flashingEnemySunkShips}
                 />
                 <div />
                 {Array.from({ length: boardSize }).map((_, x) => (
@@ -1164,6 +1224,7 @@ export default function BattleScreen({
 
                   let background = "rgba(6, 28, 47, 0.88)";
                   let label = "";
+                  let content = null;
 
                   if (isSunkCell) {
                     background = "linear-gradient(180deg, #7a2f00, #29120a)";
@@ -1182,6 +1243,14 @@ export default function BattleScreen({
                     background = "rgba(10, 45, 71, 0.95)";
                   } else if (!used && roomView?.status === "battle" && !roomView?.isYourTurn) {
                     background = "rgba(6, 24, 38, 0.78)";
+                  }
+
+                  if (flashType === "sunk") {
+                    content = <EffectSprite kind="sunk" cellSize={cellSize} scale={1.05} />;
+                  } else if (shot?.hit && !isSunkCell) {
+                    content = <EffectSprite kind="hit" cellSize={cellSize} scale={0.76} />;
+                  } else if (shot && !shot.hit) {
+                    content = <EffectSprite kind="miss" cellSize={cellSize} scale={0.72} />;
                   }
 
                   let animation = "none";
@@ -1243,12 +1312,13 @@ export default function BattleScreen({
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
+                        overflow: "hidden",
                         padding: 0,
                         position: "relative",
                         zIndex: 1,
                       }}
                     >
-                      {label}
+                      {content || label}
                     </button>
                     </React.Fragment>
                   );
@@ -1296,6 +1366,7 @@ export default function BattleScreen({
                   sunkShipIndexes={you.sunkShipIndexes || []}
                   cellSize={cellSize}
                   gap={defenseGap}
+                  flashingSunkShipIndexes={flashingDefenseSunkShips}
                 />
                 <div />
                 {Array.from({ length: boardSize }).map((_, x) => (
@@ -1330,6 +1401,7 @@ export default function BattleScreen({
                   let background = "rgba(6, 28, 47, 0.88)";
                   let color = "#effbff";
                   let label = "";
+                  let content = null;
 
                   if (isShip) {
                     background = "transparent";
@@ -1393,6 +1465,7 @@ export default function BattleScreen({
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
+                        overflow: "hidden",
                         boxSizing: "border-box",
                         position: "relative",
                         zIndex: 1,
@@ -1402,7 +1475,7 @@ export default function BattleScreen({
                         animation,
                       }}
                     >
-                      {label}
+                      {content || label}
                     </div>
                     </React.Fragment>
                   );

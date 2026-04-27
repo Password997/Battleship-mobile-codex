@@ -92,6 +92,7 @@ export default function WaitingRoomScreen({
           border: "1px solid rgba(95,224,255,0.08)",
           boxShadow: "0 0 0 70px rgba(95,224,255,0.02), 0 0 0 150px rgba(95,224,255,0.012)",
           opacity: 0.9,
+          pointerEvents: "none",
         }}
       />
       <div
@@ -108,9 +109,10 @@ export default function WaitingRoomScreen({
             "conic-gradient(from 0deg, rgba(95,224,255,0.18), rgba(95,224,255,0.02) 16%, transparent 26%, transparent 100%)",
           animation: "roomSweep 14s linear infinite",
           opacity: 0.42,
+          pointerEvents: "none",
         }}
       />
-      <div style={{ maxWidth: 900, margin: "0 auto" }}>
+      <div style={{ maxWidth: 900, margin: "0 auto", position: "relative", zIndex: 1 }}>
         <div
           style={{
             background: "linear-gradient(180deg, rgba(8,31,51,0.97), rgba(4,18,31,0.96))",

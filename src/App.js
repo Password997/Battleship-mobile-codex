@@ -6,6 +6,22 @@ import BattleScreen from "./components/BattleScreen";
 const BOARD_SIZE = 10;
 const SHIP_LENGTHS = [5, 4, 3, 3, 2];
 const CLIENT_ID_STORAGE_KEY = "battleshipClientId";
+const FLEET_SPRITE_URL = "/assets/fleet3.png";
+const FLEET4_SPRITE_URL = "/assets/fleet4.png";
+const PLACEMENT_BOARD_ART_URL = "/assets/pllacement board.png";
+const FLEET_SPRITE_SOURCE_WIDTH = 1024;
+const FLEET_SPRITE_SOURCE_HEIGHT = 1536;
+const FLEET_ART_SPECS = [
+  { length: 5, x: 40, y: 35, width: 900, height: 255 },
+  { length: 4, x: 120, y: 405, width: 700, height: 180 },
+  { length: 3, x: 48, y: 665, width: 515, height: 145 },
+  { length: 3, x: 48, y: 665, width: 515, height: 145 },
+  { length: 2, x: 666, y: 668, width: 292, height: 116 },
+];
+const FLEET_COUNTER_ART_SPECS = [
+  { length: 5, x: 40, y: 32, width: 930, height: 255, sourceUrl: FLEET4_SPRITE_URL },
+  ...FLEET_ART_SPECS.slice(1),
+];
 
 function keyOf(x, y) {
   return `${x},${y}`;
@@ -72,12 +88,55 @@ function getShipBounds(ship, cellSize, gap) {
   return { left, top, width, height, horizontal };
 }
 
-function ShipSilhouettes({ ships, cellSize, gap }) {
+function FleetSprite({
+  spec,
+  width,
+  height,
+  rotate = false,
+  dimmed = false,
+  active = false,
+}) {
+  if (!spec) return null;
+
+  const sourceUrl = spec.sourceUrl || FLEET_SPRITE_URL;
+  const sourceWidth = spec.sourceWidth || FLEET_SPRITE_SOURCE_WIDTH;
+  const sourceHeight = spec.sourceHeight || FLEET_SPRITE_SOURCE_HEIGHT;
+  const scale = Math.min(width / spec.width, height / spec.height);
+  const renderWidth = spec.width * scale;
+  const renderHeight = spec.height * scale;
+
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        width: renderWidth,
+        height: renderHeight,
+        backgroundImage: `url(${sourceUrl})`,
+        backgroundRepeat: "no-repeat",
+        backgroundSize: `${sourceWidth * scale}px ${sourceHeight * scale}px`,
+        backgroundPosition: `${-spec.x * scale}px ${-spec.y * scale}px`,
+        transform: rotate ? "rotate(90deg)" : "none",
+        transformOrigin: "center center",
+        filter: `${dimmed ? "saturate(0.45) brightness(0.6)" : "drop-shadow(0 8px 18px rgba(0,0,0,0.28))"} ${active ? "drop-shadow(0 0 18px rgba(95,224,255,0.28))" : ""}`.trim(),
+        opacity: dimmed ? 0.5 : 1,
+        pointerEvents: "none",
+      }}
+    />
+  );
+}
+
+function ShipSilhouettes({ ships, cellSize, gap, shipSpecs = FLEET_ART_SPECS }) {
   return (
     <>
       {(ships || []).map((ship, index) => {
         const bounds = getShipBounds(ship, cellSize, gap);
-        const noseSize = Math.min(cellSize * 0.46, 16);
+        const spec = shipSpecs[index] || shipSpecs.find((item) => item.length === ship.length);
+        const artHeight = bounds.horizontal
+          ? Math.max(cellSize * 1.28, bounds.height + 10)
+          : Math.max(cellSize * 1.05, bounds.width + 10);
+        const artWidth = bounds.horizontal
+          ? Math.max(bounds.width + cellSize * 0.32, cellSize * 1.45)
+          : Math.max(bounds.height + cellSize * 0.32, cellSize * 1.45);
 
         return (
           <div
@@ -85,30 +144,21 @@ function ShipSilhouettes({ ships, cellSize, gap }) {
             aria-hidden="true"
             style={{
               position: "absolute",
-              left: bounds.left,
-              top: bounds.top,
-              width: bounds.width,
-              height: bounds.height,
-              borderRadius: bounds.horizontal ? "999px 12px 12px 999px" : "999px 999px 12px 12px",
-              background: "linear-gradient(135deg, #edf9ff 0%, #7fdcff 12%, #2c5f82 42%, #0a1a2c 100%)",
-              border: "1px solid rgba(145,236,255,0.36)",
-              boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.18), 0 6px 14px rgba(18,102,156,0.18)",
+              left: bounds.left + (bounds.width - artWidth) / 2,
+              top: bounds.top + (bounds.height - artHeight) / 2,
+              width: artWidth,
+              height: artHeight,
+              display: "grid",
+              placeItems: "center",
               pointerEvents: "none",
               zIndex: 0,
-              boxSizing: "border-box",
             }}
           >
-            <div
-              style={{
-                position: "absolute",
-                left: bounds.horizontal ? 5 : "50%",
-                top: bounds.horizontal ? "50%" : 5,
-                width: bounds.horizontal ? noseSize : Math.max(8, bounds.width * 0.5),
-                height: bounds.horizontal ? Math.max(8, bounds.height * 0.5) : noseSize,
-                borderRadius: "999px",
-                background: "rgba(239,251,255,0.62)",
-                transform: "translate(-50%, -50%)",
-              }}
+            <FleetSprite
+              spec={spec}
+              width={artWidth}
+              height={artHeight}
+              rotate={!bounds.horizontal}
             />
           </div>
         );
@@ -143,7 +193,9 @@ function HomeButton({ children, onClick }) {
 
 function cardStyle() {
   return {
-    background: "linear-gradient(180deg, rgba(8,31,51,0.97), rgba(4,18,31,0.96))",
+    background: `linear-gradient(180deg, rgba(8,31,51,0.95), rgba(4,18,31,0.94)), url(${PLACEMENT_BOARD_ART_URL})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
     borderRadius: 22,
     padding: 20,
     border: "1px solid rgba(95,224,255,0.16)",
@@ -199,20 +251,24 @@ function PlacementActionButton({
 }
 
 function FleetCounter({ shipLengths, placedCount, currentIndex }) {
+  const isMobile = typeof window !== "undefined" ? window.innerWidth <= 768 : false;
+
   return (
     <div
       style={{
         marginTop: 12,
-        display: "flex",
-        gap: 12,
-        alignItems: "flex-end",
-        flexWrap: "wrap",
+        display: "grid",
+        gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+        gap: isMobile ? 3 : 4,
+        alignItems: "stretch",
       }}
     >
       {shipLengths.map((length, index) => {
         const isPlaced = index < placedCount;
         const isCurrent = index === currentIndex;
-        const color = isPlaced ? "#ff8a3d" : isCurrent ? "#59dfff" : "rgba(123, 183, 207, 0.26)";
+        const spec =
+          FLEET_COUNTER_ART_SPECS[index] ||
+          FLEET_COUNTER_ART_SPECS.find((item) => item.length === length);
 
         return (
           <div
@@ -220,26 +276,42 @@ function FleetCounter({ shipLengths, placedCount, currentIndex }) {
             style={{
               display: "grid",
               justifyItems: "center",
-              gap: 5,
+              alignContent: "start",
+              gap: isMobile ? 3 : 4,
+              padding: isMobile ? "4px 1px 6px" : "6px 2px 8px",
+              borderRadius: 10,
+              background: isCurrent
+                ? "linear-gradient(180deg, rgba(10,42,61,0.92), rgba(6,21,34,0.88))"
+                : "rgba(5,18,31,0.68)",
+              border: isCurrent
+                ? "1px solid rgba(95,224,255,0.28)"
+                : "1px solid rgba(95,224,255,0.1)",
               color: isPlaced ? "#ffd0b0" : isCurrent ? "#a5f0ff" : "#6f97ab",
               fontWeight: isCurrent ? 900 : 700,
+              minHeight: isMobile ? 114 : 130,
             }}
           >
-            <span>{length}</span>
-            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-              {Array.from({ length }).map((_, blockIndex) => (
-                <span
-                  key={blockIndex}
-                  style={{
-                    width: 15,
-                    height: 10,
-                    borderRadius: 3,
-                    background: color,
-                    display: "inline-block",
-                  }}
-                />
-              ))}
+            <div
+              style={{
+                width: "100%",
+                minHeight: isMobile ? 92 : 104,
+                display: "grid",
+                placeItems: "center",
+                overflow: "visible",
+              }}
+            >
+              <FleetSprite
+                spec={spec}
+                width={Math.min(isMobile ? 112 : 130, 56 + length * (isMobile ? 12 : 14))}
+                height={isMobile ? 36 : 40}
+                rotate
+                dimmed={!isPlaced && !isCurrent}
+                active={isCurrent}
+              />
             </div>
+            <span style={{ fontSize: isMobile ? 13 : 14, lineHeight: 1 }}>
+              {length}
+            </span>
           </div>
         );
       })}
@@ -438,32 +510,47 @@ export default function App() {
       .catch(() => {});
   }, []);
 
-  const addNotification = useCallback((text) => {
+  const addNotification = useCallback((text, options = {}) => {
     const id = `${Date.now()}-${Math.random()}`;
-    setNotifications((prev) => [...prev, { id, text }]);
+    setNotifications((prev) => [
+      ...prev,
+      { id, text, durationMs: options.durationMs ?? 3200 },
+    ]);
   }, []);
 
   const clearNotification = useCallback((id) => {
     setNotifications((prev) => prev.filter((item) => item.id !== id));
   }, []);
 
-  const flashAttackCell = useCallback((x, y, type) => {
-    const cellKey = keyOf(x, y);
+  const flashAttackCells = useCallback((cells, type = "hit") => {
+    if (!cells?.length) return;
     setFlashCells((prev) => ({
       ...prev,
       attack: {
         ...prev.attack,
-        [cellKey]: type,
+        ...cells.reduce((acc, cell) => {
+          acc[keyOf(cell.x, cell.y)] = type;
+          return acc;
+        }, {}),
       },
     }));
+
+    const durationMs = type === "sunk" ? 1000 : 320;
+
     setTimeout(() => {
       setFlashCells((prev) => {
         const next = { ...prev.attack };
-        delete next[cellKey];
+        for (const cell of cells) {
+          delete next[keyOf(cell.x, cell.y)];
+        }
         return { ...prev, attack: next };
       });
-    }, 320);
+    }, durationMs);
   }, []);
+
+  const flashAttackCell = useCallback((x, y, type) => {
+    flashAttackCells([{ x, y }], type);
+  }, [flashAttackCells]);
 
   const flashDefenseCells = useCallback((cells, type = "hit") => {
     if (!cells?.length) return;
@@ -475,6 +562,8 @@ export default function App() {
       return { ...prev, defense: nextDefense };
     });
 
+    const durationMs = type === "sunk" ? 1000 : 350;
+
     setTimeout(() => {
       setFlashCells((prev) => {
         const nextDefense = { ...prev.defense };
@@ -483,7 +572,7 @@ export default function App() {
         }
         return { ...prev, defense: nextDefense };
       });
-    }, 350);
+    }, durationMs);
   }, []);
 
   useEffect(() => {
@@ -563,6 +652,15 @@ export default function App() {
         }
       }
 
+      if (previous?.you?.sunkShipIndexes && payload?.you?.sunkShipIndexes && payload?.you?.ships) {
+        const prevSunk = new Set(previous.you.sunkShipIndexes);
+        const newSunkIndexes = payload.you.sunkShipIndexes.filter((index) => !prevSunk.has(index));
+        const newSunkCells = newSunkIndexes.flatMap((index) => payload.you.ships[index] || []);
+        if (newSunkCells.length) {
+          flashDefenseCells(newSunkCells, "sunk");
+        }
+      }
+
       if (
         previous &&
         previous.status === "lobby" &&
@@ -603,9 +701,10 @@ export default function App() {
 
     const onBattlePopup = (payload) => {
       const items = payload?.items || [];
+      const notificationDurationMs = payload?.type === "sunk" ? 750 : 3200;
       items.forEach((item) => {
         if (item?.text) {
-          addNotification(item.text);
+          addNotification(item.text, { durationMs: notificationDurationMs });
         }
       });
 
@@ -891,12 +990,26 @@ export default function App() {
             setInfo(`Hit on ${response.hitPlayers.map((p) => p.name).join(", ")}`);
             playEffect("hit");
             vibrate(60);
-            flashAttackCell(x, y, response.sunkShips?.length ? "sunk" : "hit");
+            if (response.sunkShips?.length) {
+              flashAttackCells(
+                response.sunkShips.flatMap((ship) => ship.cells || []),
+                "sunk"
+              );
+            } else {
+              flashAttackCell(x, y, "hit");
+            }
           } else {
             setInfo("Miss");
             playEffect("miss");
             vibrate(25);
-            flashAttackCell(x, y, response.sunkMissShips?.length ? "sunk" : "miss");
+            if (response.sunkMissShips?.length) {
+              flashAttackCells(
+                response.sunkMissShips.flatMap((ship) => ship.cells || []),
+                "sunk"
+              );
+            } else {
+              flashAttackCell(x, y, "miss");
+            }
           }
         }
       );
@@ -1473,6 +1586,339 @@ export default function App() {
     </div>
   );
 
+  const renderHomeV2 = () => {
+    const isMobile = typeof window !== "undefined" ? window.innerWidth <= 768 : false;
+    const homeBackground = "/assets/31dabfeb-75ee-484d-96c9-32b44770dccb.png";
+
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "#020913",
+          fontFamily: "'Segoe UI', 'Trebuchet MS', Arial, sans-serif",
+          color: "#eefaff",
+        }}
+      >
+        <style>
+          {`
+            @keyframes homeSpinnerV2 {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}
+        </style>
+
+        <div
+          style={{
+            minHeight: "100vh",
+            maxWidth: 540,
+            margin: "0 auto",
+            position: "relative",
+            overflow: "hidden",
+            backgroundImage: `linear-gradient(180deg, rgba(1,8,14,0.2) 0%, rgba(1,8,14,0.16) 18%, rgba(1,8,14,0.38) 42%, rgba(1,8,14,0.74) 66%, rgba(1,8,14,0.96) 100%), url(${homeBackground})`,
+            backgroundSize: isMobile ? "94%" : "74%",
+            backgroundPosition: isMobile ? "center 20px" : "center -48px",
+            backgroundRepeat: "no-repeat",
+            boxShadow: "0 0 0 1px rgba(87,216,255,0.08), 0 28px 80px rgba(0,0,0,0.45)",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(180deg, rgba(1,8,14,0.04) 0%, rgba(1,8,14,0.08) 44%, rgba(1,8,14,0.22) 58%, rgba(1,8,14,0.7) 72%, rgba(1,8,14,0.96) 84%, rgba(1,8,14,1) 100%)",
+              pointerEvents: "none",
+            }}
+          />
+
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: isMobile ? "46%" : "40%",
+              background:
+                "linear-gradient(180deg, rgba(2,9,19,0) 0%, rgba(2,9,19,0.16) 12%, rgba(2,9,19,0.56) 30%, rgba(2,9,19,0.9) 54%, rgba(2,9,19,0.98) 74%, rgba(2,9,19,1) 100%)",
+              pointerEvents: "none",
+            }}
+          />
+
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              background:
+                "linear-gradient(rgba(74, 207, 255, 0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(74, 207, 255, 0.035) 1px, transparent 1px)",
+              backgroundSize: "48px 48px",
+              opacity: 0.28,
+              pointerEvents: "none",
+            }}
+          />
+
+          <div
+            style={{
+              position: "relative",
+              zIndex: 1,
+              minHeight: "100vh",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
+              padding: isMobile ? "14px 14px 16px" : "24px 20px 24px",
+              boxSizing: "border-box",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "9px 12px",
+                  borderRadius: 999,
+                  background: "rgba(4, 21, 35, 0.62)",
+                  border: "1px solid rgba(103,226,255,0.18)",
+                  backdropFilter: "blur(8px)",
+                  color: socketConnected ? "#99f6b5" : "#ffd47a",
+                  fontSize: 12,
+                  fontWeight: 800,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                }}
+              >
+                <span
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: "50%",
+                    background: socketConnected ? "#22c55e" : "transparent",
+                    border: socketConnected ? "none" : "2px solid #facc15",
+                    borderTopColor: socketConnected ? "#22c55e" : "transparent",
+                    display: "inline-block",
+                    animation: socketConnected ? "none" : "homeSpinnerV2 0.8s linear infinite",
+                  }}
+                />
+                {socketConnected ? "Online" : "Connecting"}
+              </div>
+
+              <div
+                style={{
+                  padding: "9px 12px",
+                  borderRadius: 999,
+                  background: "rgba(4, 21, 35, 0.62)",
+                  border: "1px solid rgba(103,226,255,0.18)",
+                  backdropFilter: "blur(8px)",
+                  color: "#b7f4ff",
+                  fontSize: 12,
+                  fontWeight: 800,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                }}
+              >
+                Local Preview
+              </div>
+            </div>
+
+            <div style={{ flex: isMobile ? 0.72 : 1 }} />
+
+            <div
+              style={{
+                display: "grid",
+                gap: isMobile ? 10 : 12,
+                marginTop: isMobile ? -20 : 24,
+                transform: isMobile ? "translateY(-74px)" : "none",
+              }}
+            >
+              <div
+                style={{
+                  padding: isMobile ? 14 : 18,
+                  borderRadius: 24,
+                  background: "linear-gradient(180deg, rgba(4,18,31,0.12), rgba(3,13,24,0.18))",
+                  border: "1px solid rgba(94,224,255,0.1)",
+                  boxShadow: "0 20px 40px rgba(0,0,0,0.24)",
+                  backdropFilter: "blur(6px)",
+                }}
+              >
+                <div
+                  style={{
+                    marginBottom: 10,
+                    textAlign: "center",
+                    color: "#9fefff",
+                  }}
+                >
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 900,
+                      letterSpacing: "0.18em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Initials
+                  </div>
+                  <div
+                    style={{
+                      marginTop: 4,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      letterSpacing: "0.08em",
+                      color: "rgba(190,241,255,0.72)",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    3 letters
+                  </div>
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 10,
+                    justifyContent: "center",
+                  }}
+                >
+                  {[0, 1, 2].map((index) => (
+                    <input
+                      key={index}
+                      ref={(element) => {
+                        initialsInputRefs.current[index] = element;
+                      }}
+                      value={playerName[index] || ""}
+                      onChange={(e) => {
+                        const nextChar = e.target.value
+                          .replace(/[^a-z0-9]/gi, "")
+                          .slice(-1)
+                          .toUpperCase();
+                        const chars = playerName.padEnd(3, " ").slice(0, 3).split("");
+                        chars[index] = nextChar;
+                        setPlayerName(chars.join("").replace(/\s/g, ""));
+                        if (nextChar && index < 2) {
+                          initialsInputRefs.current[index + 1]?.focus();
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Backspace" && !playerName[index] && index > 0) {
+                          initialsInputRefs.current[index - 1]?.focus();
+                        }
+                      }}
+                      maxLength={1}
+                      style={{
+                        width: isMobile ? 58 : 64,
+                        height: isMobile ? 58 : 64,
+                        borderRadius: 18,
+                        border: playerName[index]
+                          ? "1px solid rgba(113, 255, 167, 0.42)"
+                          : "1px solid rgba(94,224,255,0.22)",
+                        background: "transparent",
+                        color: playerName[index] ? "#dfffe6" : "#dbeafe",
+                        fontSize: 28,
+                        fontWeight: 900,
+                        textAlign: "center",
+                        boxSizing: "border-box",
+                        outline: "none",
+                        textTransform: "uppercase",
+                      }}
+                    />
+                  ))}
+                </div>
+
+                <input
+                  value={roomCodeInput}
+                  onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase().slice(0, 4))}
+                  placeholder="ROOM CODE"
+                  maxLength={4}
+                  style={{
+                    width: "100%",
+                    marginTop: 14,
+                    padding: "16px 18px",
+                    borderRadius: 18,
+                    border: "1px solid rgba(94,224,255,0.18)",
+                    background: "transparent",
+                    color: "#eefaff",
+                    fontSize: 18,
+                    boxSizing: "border-box",
+                    letterSpacing: 6,
+                    textTransform: "uppercase",
+                    outline: "none",
+                  }}
+                />
+
+                <div
+                  style={{
+                    marginTop: 14,
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 12,
+                  }}
+                >
+                  <button
+                    onClick={handleCreateRoom}
+                    style={{
+                      border: "1px solid rgba(94,224,255,0.18)",
+                      borderRadius: 20,
+                      padding: isMobile ? "16px 14px" : "18px 14px",
+                      background: "linear-gradient(180deg, rgba(8,43,66,0.18), rgba(4,20,34,0.24))",
+                      color: "#eefaff",
+                      fontSize: 15,
+                      fontWeight: 900,
+                      letterSpacing: "0.06em",
+                      textTransform: "uppercase",
+                      cursor: "pointer",
+                      boxShadow: "0 14px 26px rgba(0,0,0,0.24)",
+                    }}
+                  >
+                    Create Room
+                  </button>
+                  <button
+                    onClick={handleJoinRoom}
+                    style={{
+                      border: "1px solid rgba(94,224,255,0.18)",
+                      borderRadius: 20,
+                      padding: isMobile ? "16px 14px" : "18px 14px",
+                      background: "linear-gradient(180deg, rgba(8,43,66,0.18), rgba(4,20,34,0.24))",
+                      color: "#eefaff",
+                      fontSize: 15,
+                      fontWeight: 900,
+                      letterSpacing: "0.06em",
+                      textTransform: "uppercase",
+                      cursor: "pointer",
+                      boxShadow: "0 14px 26px rgba(0,0,0,0.24)",
+                    }}
+                  >
+                    Join Room
+                  </button>
+                </div>
+              </div>
+
+              {(error || info) && (
+                <div
+                  style={{
+                    borderRadius: 18,
+                    padding: 16,
+                    border: `1px solid ${error ? "rgba(255,149,149,0.34)" : "rgba(104,226,255,0.22)"}`,
+                    background: error ? "rgba(90,20,20,0.5)" : "rgba(7,36,56,0.7)",
+                    color: error ? "#ffc0c0" : "#9cefff",
+                    fontWeight: 700,
+                    backdropFilter: "blur(12px)",
+                  }}
+                >
+                  {error || info}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderPlacement = () => {
     const isMobile = typeof window !== "undefined" ? window.innerWidth <= 768 : false;
     const placementCellSize = isMobile ? 30 : 34;
@@ -1846,7 +2292,7 @@ export default function App() {
   };
 
   if (!activeRoomCode && !roomView) {
-    return renderHome();
+    return renderHomeV2();
   }
 
   if (!roomView) {
