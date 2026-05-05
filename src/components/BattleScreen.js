@@ -43,10 +43,6 @@ function columnLabel(index) {
   return String.fromCharCode(65 + index);
 }
 
-function coordinateLabel(x, y) {
-  return `${columnLabel(x)}${y + 1}`;
-}
-
 function splitPlayerName(name = "") {
   const match = String(name).trim().match(/^(P\d+)\s*(.*)$/);
   if (!match) {
@@ -314,30 +310,6 @@ function Toast({ item }) {
   );
 }
 
-function shotResultLabel(shot) {
-  if (shot?.sunk || shot?.result === "sunk") return "SUNK";
-  if (shot?.hit || shot?.result === "hit" || shot?.result === "global-hit") return "HIT";
-  return "MISS";
-}
-
-function buildCombatLog({ shotHistory = [], shotsTaken = [] }) {
-  const outgoing = (shotHistory || []).slice(-4).map((shot, index) => ({
-    id: `out-${shot.x}-${shot.y}-${index}`,
-    tone: shot?.sunk ? "sunk" : shot?.hit ? "hit" : "miss",
-    label: "OUT",
-    text: `You fired ${coordinateLabel(shot.x, shot.y)} - ${shotResultLabel(shot)}`,
-  }));
-
-  const incoming = (shotsTaken || []).slice(-4).map((shot, index) => ({
-    id: `in-${shot.x}-${shot.y}-${index}`,
-    tone: shot?.result === "sunk" ? "sunk" : shot?.result === "miss" ? "miss" : "hit",
-    label: "IN",
-    text: `Incoming ${coordinateLabel(shot.x, shot.y)} - ${shotResultLabel(shot)}`,
-  }));
-
-  return [...outgoing, ...incoming].slice(-5).reverse();
-}
-
 export default function BattleScreen({
   roomView,
   onFire,
@@ -424,15 +396,6 @@ export default function BattleScreen({
     () => buildRevealedSunkEnemyCells(you.revealedSunkShipCells || []),
     [you.revealedSunkShipCells]
   );
-  const combatLog = useMemo(
-    () =>
-      buildCombatLog({
-        shotHistory: you.shotHistory || [],
-        shotsTaken: you.shotsTaken || [],
-      }),
-    [you.shotHistory, you.shotsTaken]
-  );
-
   const aliveCount = players.filter((p) => !p.defeated).length;
   const defeatedCount = players.filter((p) => p.defeated).length;
   const finalRanking = useMemo(() => {
@@ -1094,59 +1057,6 @@ export default function BattleScreen({
               </div>
             );
           })}
-        </div>
-
-        <div
-          className="command-log"
-          style={{
-            background: "linear-gradient(180deg, rgba(5,21,36,0.94), rgba(3,13,24,0.94))",
-            borderRadius: 16,
-            border: "1px solid rgba(95,224,255,0.16)",
-            boxShadow: "0 14px 28px rgba(0,0,0,0.22)",
-            padding: isMobile ? 10 : 12,
-            display: "grid",
-            gap: 8,
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 10,
-            }}
-          >
-            <div style={{ color: "#63e6ff", fontSize: 11, fontWeight: 900, letterSpacing: "0.2em", textTransform: "uppercase" }}>
-              Command Log
-            </div>
-            <div style={{ color: "#86b4ca", fontSize: 11, fontWeight: 800 }}>
-              {combatLog.length ? "Live fire report" : "Awaiting first shot"}
-            </div>
-          </div>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(210px, 1fr))",
-              gap: 8,
-            }}
-          >
-            {combatLog.length ? (
-              combatLog.map((entry) => (
-                <div
-                  key={entry.id}
-                  className={`command-log__entry command-log__entry--${entry.tone}`}
-                >
-                  <span>{entry.label}</span>
-                  <strong>{entry.text}</strong>
-                </div>
-              ))
-            ) : (
-              <div className="command-log__entry command-log__entry--idle">
-                <span>SYS</span>
-                <strong>No shots recorded</strong>
-              </div>
-            )}
-          </div>
         </div>
 
         {isMobile && (
