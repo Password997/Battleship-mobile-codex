@@ -4,11 +4,11 @@ const FLEET_SPRITE_URL = "/assets/fleet3.png";
 const FLEET_SPRITE_SOURCE_WIDTH = 1024;
 const FLEET_SPRITE_SOURCE_HEIGHT = 1536;
 const FLEET_ART_SPECS = [
-  { length: 5, x: 40, y: 35, width: 900, height: 255 },
-  { length: 4, x: 120, y: 405, width: 700, height: 180 },
-  { length: 3, x: 48, y: 665, width: 515, height: 145 },
-  { length: 3, x: 48, y: 665, width: 515, height: 145 },
-  { length: 2, x: 666, y: 668, width: 292, height: 116 },
+  { length: 5, x: 48, y: 105, width: 891, height: 165 },
+  { length: 4, x: 132, y: 412, width: 687, height: 121 },
+  { length: 3, x: 80, y: 665, width: 483, height: 115 },
+  { length: 3, x: 80, y: 665, width: 483, height: 115 },
+  { length: 2, x: 670, y: 680, width: 287, height: 85 },
 ];
 const EMOGY_SPRITE_URL = "/assets/emogy.png";
 const EMOGY_SPRITE_SOURCE_WIDTH = 1402;
@@ -41,6 +41,10 @@ function keyOf(x, y) {
 }
 function columnLabel(index) {
   return String.fromCharCode(65 + index);
+}
+
+function coordinateLabel(x, y) {
+  return `${columnLabel(x)}${y + 1}`;
 }
 
 function splitPlayerName(name = "") {
@@ -107,33 +111,88 @@ function getShipBounds(ship, cellSize, gap) {
   return { left, top, width, height, horizontal };
 }
 
-function FleetSprite({ spec, width, height, rotate = false, dimmed = false, sunk = false }) {
+function getShipArtFrame(bounds, shipLength, cellSize) {
+  const axisPadding = shipLength === 5 ? cellSize * 0.42 : cellSize * 0.16;
+  const crossPadding = cellSize * 0.22;
+  const orientationOffsets = {
+    horizontal: {
+      5: { x: 0, y: -2 },
+      4: { x: 0, y: -1 },
+      3: { x: 0, y: -1 },
+      2: { x: 0, y: 0 },
+    },
+    vertical: {
+      5: { x: 0, y: 0 },
+      4: { x: 0, y: 0 },
+      3: { x: 0, y: 0 },
+      2: { x: 0, y: 0 },
+    },
+  };
+
+  const artWidth = bounds.horizontal
+    ? Math.max(bounds.width + axisPadding, cellSize * 1.5)
+    : Math.max(bounds.width + crossPadding, cellSize * 1.22);
+  const artHeight = bounds.horizontal
+    ? Math.max(bounds.height + crossPadding, cellSize * 1.22)
+    : Math.max(bounds.height + axisPadding, cellSize * 1.5);
+  const offset =
+    orientationOffsets[bounds.horizontal ? "horizontal" : "vertical"][shipLength] || { x: 0, y: 0 };
+
+  return {
+    width: artWidth,
+    height: artHeight,
+    left: bounds.left + (bounds.width - artWidth) / 2 + offset.x,
+    top: bounds.top + (bounds.height - artHeight) / 2 + offset.y,
+  };
+}
+
+function FleetSprite({ spec, width, height, rotate = false, fitRotated = false, dimmed = false, sunk = false }) {
   if (!spec) return null;
 
-  const scale = Math.min(width / spec.width, height / spec.height);
+  const scale = rotate && fitRotated
+    ? Math.min(width / spec.height, height / spec.width)
+    : Math.min(width / spec.width, height / spec.height);
+  const renderWidth = spec.width * scale;
+  const renderHeight = spec.height * scale;
+  const frameWidth = rotate ? width : renderWidth;
+  const frameHeight = rotate ? height : renderHeight;
 
   return (
     <div
       aria-hidden="true"
       style={{
-        width: spec.width * scale,
-        height: spec.height * scale,
-        backgroundImage: `url(${FLEET_SPRITE_URL})`,
-        backgroundRepeat: "no-repeat",
-        backgroundSize: `${FLEET_SPRITE_SOURCE_WIDTH * scale}px ${FLEET_SPRITE_SOURCE_HEIGHT * scale}px`,
-        backgroundPosition: `${-spec.x * scale}px ${-spec.y * scale}px`,
-        transform: rotate ? "rotate(90deg)" : "none",
-        transformOrigin: "center center",
-        filter: [
-          dimmed ? "saturate(0.46) brightness(0.64)" : "drop-shadow(0 8px 18px rgba(0,0,0,0.28))",
-          sunk ? "sepia(0.36) saturate(1.08) brightness(0.82) drop-shadow(0 0 10px rgba(249,115,22,0.34))" : "",
-        ]
-          .filter(Boolean)
-          .join(" "),
-        opacity: dimmed ? 0.54 : 1,
+        width: frameWidth,
+        height: frameHeight,
+        position: "relative",
         pointerEvents: "none",
       }}
-    />
+    >
+      <div
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: "50%",
+          width: renderWidth,
+          height: renderHeight,
+          backgroundImage: `url(${FLEET_SPRITE_URL})`,
+          backgroundRepeat: "no-repeat",
+          backgroundSize: `${FLEET_SPRITE_SOURCE_WIDTH * scale}px ${FLEET_SPRITE_SOURCE_HEIGHT * scale}px`,
+          backgroundPosition: `${-spec.x * scale}px ${-spec.y * scale}px`,
+          transform: rotate
+            ? "translate(-50%, -50%) rotate(90deg)"
+            : "translate(-50%, -50%)",
+          transformOrigin: "center center",
+          filter: [
+            dimmed ? "saturate(0.46) brightness(0.64)" : "drop-shadow(0 8px 18px rgba(0,0,0,0.28))",
+            sunk ? "sepia(0.36) saturate(1.08) brightness(0.82) drop-shadow(0 0 10px rgba(249,115,22,0.34))" : "",
+          ]
+            .filter(Boolean)
+            .join(" "),
+          opacity: dimmed ? 0.54 : 1,
+          pointerEvents: "none",
+        }}
+      />
+    </div>
   );
 }
 
@@ -171,7 +230,7 @@ function ShipSilhouettes({
   cellSize,
   gap,
   allSunk = false,
-  flashingSunkShipIndexes = new Set(),
+  showSunkFire = true,
 }) {
   const sunk = new Set(sunkShipIndexes || []);
 
@@ -183,25 +242,20 @@ function ShipSilhouettes({
 
         const bounds = getShipBounds(cells, cellSize, gap);
         const isSunk = allSunk || sunk.has(index);
-        const isFlashingSunk = flashingSunkShipIndexes.has(index);
-        const spec = FLEET_ART_SPECS[index] || FLEET_ART_SPECS.find((item) => item.length === cells.length);
-        const artHeight = bounds.horizontal
-          ? Math.max(cellSize * 1.3, bounds.height + 10)
-          : Math.max(cellSize * 1.08, bounds.width + 10);
-        const artWidth = bounds.horizontal
-          ? Math.max(bounds.width + cellSize * 0.34, cellSize * 1.5)
-          : Math.max(bounds.height + cellSize * 0.34, cellSize * 1.5);
+        const spec = FLEET_ART_SPECS.find((item) => item.length === cells.length);
+        const frame = getShipArtFrame(bounds, cells.length, cellSize);
 
         return (
           <div
             key={`ship-shape-${index}`}
+            className="ship-bob"
             aria-hidden="true"
             style={{
               position: "absolute",
-              left: bounds.left + (bounds.width - artWidth) / 2,
-              top: bounds.top + (bounds.height - artHeight) / 2,
-              width: artWidth,
-              height: artHeight,
+              left: frame.left,
+              top: frame.top,
+              width: frame.width,
+              height: frame.height,
               display: "grid",
               placeItems: "center",
               pointerEvents: "none",
@@ -210,38 +264,25 @@ function ShipSilhouettes({
           >
             <FleetSprite
               spec={spec}
-              width={artWidth}
-              height={artHeight}
+              width={frame.width}
+              height={frame.height}
               rotate={!bounds.horizontal}
+              fitRotated={!bounds.horizontal}
               dimmed={isSunk}
               sunk={isSunk}
             />
-            {isFlashingSunk && (
-              <EffectSprite
-                kind="sunk"
-                cellSize={Math.max(artHeight, artWidth)}
-                scale={0.68}
-                dimmed
-              />
+            {isSunk && showSunkFire && (
+              <div className="sunk-ship-fire" aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </div>
             )}
           </div>
         );
       })}
     </>
   );
-}
-
-function buildFlashingShipIndexes(ships, flashMap, flashType = "sunk") {
-  const flashing = new Set();
-  (ships || []).forEach((ship, index) => {
-    const cells = Array.isArray(ship) ? ship : ship?.cells || [];
-    if (
-      cells.some((cell) => flashMap?.[keyOf(cell.x, cell.y)] === flashType)
-    ) {
-      flashing.add(index);
-    }
-  });
-  return flashing;
 }
 
 function buildRevealedSunkEnemyCells(revealedSunkShipCells) {
@@ -271,6 +312,30 @@ function Toast({ item }) {
       {item.text}
     </div>
   );
+}
+
+function shotResultLabel(shot) {
+  if (shot?.sunk || shot?.result === "sunk") return "SUNK";
+  if (shot?.hit || shot?.result === "hit" || shot?.result === "global-hit") return "HIT";
+  return "MISS";
+}
+
+function buildCombatLog({ shotHistory = [], shotsTaken = [] }) {
+  const outgoing = (shotHistory || []).slice(-4).map((shot, index) => ({
+    id: `out-${shot.x}-${shot.y}-${index}`,
+    tone: shot?.sunk ? "sunk" : shot?.hit ? "hit" : "miss",
+    label: "OUT",
+    text: `You fired ${coordinateLabel(shot.x, shot.y)} - ${shotResultLabel(shot)}`,
+  }));
+
+  const incoming = (shotsTaken || []).slice(-4).map((shot, index) => ({
+    id: `in-${shot.x}-${shot.y}-${index}`,
+    tone: shot?.result === "sunk" ? "sunk" : shot?.result === "miss" ? "miss" : "hit",
+    label: "IN",
+    text: `Incoming ${coordinateLabel(shot.x, shot.y)} - ${shotResultLabel(shot)}`,
+  }));
+
+  return [...outgoing, ...incoming].slice(-5).reverse();
 }
 
 export default function BattleScreen({
@@ -303,12 +368,16 @@ export default function BattleScreen({
   const [winnerOpen, setWinnerOpen] = useState(true);
   const [eliminatedOpen, setEliminatedOpen] = useState(true);
   const [activeMobileBoard, setActiveMobileBoard] = useState("attack");
+  const resolvedWinnerName =
+    roomView?.winnerName ||
+    players.find((player) => !player.defeated)?.name ||
+    "";
 
   useEffect(() => {
-    if (roomView?.status === "finished" && roomView?.winnerName) {
+    if (roomView?.status === "finished" && resolvedWinnerName) {
       setWinnerOpen(true);
     }
-  }, [roomView?.status, roomView?.winnerName]);
+  }, [roomView?.status, resolvedWinnerName]);
 
   useEffect(() => {
     if (you?.defeated) {
@@ -355,21 +424,21 @@ export default function BattleScreen({
     () => buildRevealedSunkEnemyCells(you.revealedSunkShipCells || []),
     [you.revealedSunkShipCells]
   );
-  const flashingEnemySunkShips = useMemo(
-    () => buildFlashingShipIndexes(you.revealedSunkShipCells || [], flashCells?.attack || {}, "sunk"),
-    [you.revealedSunkShipCells, flashCells?.attack]
-  );
-  const flashingDefenseSunkShips = useMemo(
-    () => buildFlashingShipIndexes(you.ships || [], flashCells?.defense || {}, "sunk"),
-    [you.ships, flashCells?.defense]
+  const combatLog = useMemo(
+    () =>
+      buildCombatLog({
+        shotHistory: you.shotHistory || [],
+        shotsTaken: you.shotsTaken || [],
+      }),
+    [you.shotHistory, you.shotsTaken]
   );
 
   const aliveCount = players.filter((p) => !p.defeated).length;
   const defeatedCount = players.filter((p) => p.defeated).length;
   const finalRanking = useMemo(() => {
     return [...players].sort((a, b) => {
-      const aWon = a.name === roomView?.winnerName ? 1 : 0;
-      const bWon = b.name === roomView?.winnerName ? 1 : 0;
+      const aWon = a.name === resolvedWinnerName ? 1 : 0;
+      const bWon = b.name === resolvedWinnerName ? 1 : 0;
       if (aWon !== bWon) return bWon - aWon;
 
       const aShips = typeof a.shipsLeft === "number" ? a.shipsLeft : 0;
@@ -378,15 +447,18 @@ export default function BattleScreen({
 
       return String(a.name).localeCompare(String(b.name));
     });
-  }, [players, roomView?.winnerName]);
+  }, [players, resolvedWinnerName]);
   const currentTurnIdentity = splitPlayerName(roomView?.currentTurnName || "");
   const currentTurnIndex = players.findIndex(
     (player) => player.id === roomView?.currentTurnPlayerId
   );
   const currentTurnColor = playerColor(Math.max(0, currentTurnIndex));
+  const hasAttackFlash = Object.keys(flashCells?.attack || {}).length > 0;
+  const hasDefenseFlash = Object.keys(flashCells?.defense || {}).length > 0;
 
   return (
     <div
+      className="screen-shell"
       style={{
         minHeight: "100vh",
         background:
@@ -399,6 +471,10 @@ export default function BattleScreen({
         overflow: "hidden",
       }}
     >
+      <div className="command-beacon" aria-hidden="true" />
+      <div className="tactical-sweep" aria-hidden="true" />
+      <div className="ocean-haze" aria-hidden="true" />
+      <div className="ambient-particles" aria-hidden="true" />
       <div
         aria-hidden="true"
         style={{
@@ -472,7 +548,7 @@ export default function BattleScreen({
         </div>
       )}
 
-      {roomView?.status === "finished" && winnerOpen && roomView?.winnerName && (
+      {roomView?.status === "finished" && winnerOpen && resolvedWinnerName && (
         <div
           style={{
             position: "fixed",
@@ -508,7 +584,7 @@ export default function BattleScreen({
                   color: "#f4fbff",
                 }}
               >
-                {roomView.winnerName} wins!
+                {resolvedWinnerName} wins!
               </div>
               <div
                 style={{
@@ -526,7 +602,7 @@ export default function BattleScreen({
               {finalRanking.map((player, index) => {
                 const identity = splitPlayerName(player.name);
                 const accent = playerColor(index);
-                const winner = player.name === roomView.winnerName;
+                const winner = player.name === resolvedWinnerName;
                 const shipsLeft =
                   typeof player.shipsLeft === "number" ? player.shipsLeft : 0;
                 const totalShips = player.totalShips || 5;
@@ -826,6 +902,7 @@ export default function BattleScreen({
               Battle
             </div>
             <div
+              className={roomView?.status === "battle" && roomView?.isYourTurn ? "turn-banner" : ""}
               style={{
                 marginTop: 8,
                 display: "inline-flex",
@@ -853,7 +930,7 @@ export default function BattleScreen({
               }}
             >
               {roomView?.status === "finished" ? (
-                `Winner: ${roomView?.winnerName || "-"}`
+                `Winner: ${resolvedWinnerName || "-"}`
               ) : roomView?.isYourTurn ? (
                 "FIRE YOUR TURN"
               ) : (
@@ -1019,6 +1096,59 @@ export default function BattleScreen({
           })}
         </div>
 
+        <div
+          className="command-log"
+          style={{
+            background: "linear-gradient(180deg, rgba(5,21,36,0.94), rgba(3,13,24,0.94))",
+            borderRadius: 16,
+            border: "1px solid rgba(95,224,255,0.16)",
+            boxShadow: "0 14px 28px rgba(0,0,0,0.22)",
+            padding: isMobile ? 10 : 12,
+            display: "grid",
+            gap: 8,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+            }}
+          >
+            <div style={{ color: "#63e6ff", fontSize: 11, fontWeight: 900, letterSpacing: "0.2em", textTransform: "uppercase" }}>
+              Command Log
+            </div>
+            <div style={{ color: "#86b4ca", fontSize: 11, fontWeight: 800 }}>
+              {combatLog.length ? "Live fire report" : "Awaiting first shot"}
+            </div>
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(210px, 1fr))",
+              gap: 8,
+            }}
+          >
+            {combatLog.length ? (
+              combatLog.map((entry) => (
+                <div
+                  key={entry.id}
+                  className={`command-log__entry command-log__entry--${entry.tone}`}
+                >
+                  <span>{entry.label}</span>
+                  <strong>{entry.text}</strong>
+                </div>
+              ))
+            ) : (
+              <div className="command-log__entry command-log__entry--idle">
+                <span>SYS</span>
+                <strong>No shots recorded</strong>
+              </div>
+            )}
+          </div>
+        </div>
+
         {isMobile && (
           <div
             style={{
@@ -1073,6 +1203,11 @@ export default function BattleScreen({
           }}
         >
           <div
+            className={
+              roomView?.status === "battle" && roomView?.isYourTurn
+                ? "battle-card-active"
+                : ""
+            }
             style={{
               background:
                 roomView?.status === "battle"
@@ -1112,6 +1247,7 @@ export default function BattleScreen({
               }}
             >
                 <div
+                  className={hasAttackFlash ? "battle-board--impact" : ""}
                   style={{
                     display: "grid",
                     gridTemplateColumns: `18px repeat(${boardSize}, ${cellSize}px)`,
@@ -1182,7 +1318,7 @@ export default function BattleScreen({
                   cellSize={cellSize}
                   gap={attackGap}
                   allSunk
-                  flashingSunkShipIndexes={flashingEnemySunkShips}
+                  showSunkFire={false}
                 />
                 <div />
                 {Array.from({ length: boardSize }).map((_, x) => (
@@ -1216,6 +1352,7 @@ export default function BattleScreen({
 
                   const cellKey = keyOf(x, y);
                   const isSunkCell = revealedSunkEnemyCells.has(cellKey);
+                  const isIntelOnlySunkCell = isSunkCell && !shot;
                   const flashType = flashCells?.attack?.[cellKey] || null;
                   const isPending =
                     pendingShot &&
@@ -1245,12 +1382,21 @@ export default function BattleScreen({
                     background = "rgba(6, 24, 38, 0.78)";
                   }
 
-                  if (flashType === "sunk") {
-                    content = <EffectSprite kind="sunk" cellSize={cellSize} scale={1.05} />;
-                  } else if (shot?.hit && !isSunkCell) {
+                  if (isIntelOnlySunkCell) {
+                    background = "linear-gradient(180deg, rgba(56,44,25,0.74), rgba(14,42,55,0.72))";
+                    label = "INTEL";
+                  }
+
+                  if (isSunkCell) {
+                    content = <EffectSprite kind="sunk" cellSize={cellSize} scale={0.88} dimmed />;
+                  } else if (shot?.hit) {
                     content = <EffectSprite kind="hit" cellSize={cellSize} scale={0.76} />;
                   } else if (shot && !shot.hit) {
                     content = <EffectSprite kind="miss" cellSize={cellSize} scale={0.72} />;
+                  }
+
+                  if (isIntelOnlySunkCell) {
+                    content = null;
                   }
 
                   let animation = "none";
@@ -1262,6 +1408,10 @@ export default function BattleScreen({
                     animation = "hitFlash 0.25s ease-out";
                   } else if (flashType === "miss") {
                     animation = "missFlash 0.25s ease-out";
+                  }
+
+                  if (isIntelOnlySunkCell) {
+                    animation = "none";
                   }
 
                   return (
@@ -1284,6 +1434,16 @@ export default function BattleScreen({
                         </div>
                       )}
                     <button
+                      className={[
+                        canShoot ? "battle-cell--armed" : "",
+                        isPending ? "battle-cell--pending" : "",
+                        isIntelOnlySunkCell ? "battle-cell--intel" : "",
+                        flashType === "sunk" || (shot && isSunkCell) ? "battle-cell--sunk" : "",
+                        shot?.hit || (shot && isSunkCell) ? "battle-cell--hit" : "",
+                        shot && !shot.hit ? "battle-cell--miss" : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
                       onClick={() => {
                         if (canShoot) onFire(x, y);
                       }}
@@ -1291,8 +1451,10 @@ export default function BattleScreen({
                       style={{
                         width: cellSize,
                         height: cellSize,
-                        border: isSunkCell
+                        border: shot && isSunkCell
                           ? "1px solid rgba(255, 181, 91, 0.95)"
+                          : isIntelOnlySunkCell
+                            ? "1px dashed rgba(255, 202, 119, 0.7)"
                           : canShoot
                             ? "1px solid rgba(94, 224, 255, 0.72)"
                             : roomView?.status === "battle" && !roomView?.isYourTurn
@@ -1303,12 +1465,14 @@ export default function BattleScreen({
                         fontWeight: 900,
                         fontSize: isMobile ? 16 : 20,
                         cursor: canShoot ? "crosshair" : "default",
-                        boxShadow: isSunkCell
+                        boxShadow: shot && isSunkCell
                           ? "inset 0 0 0 2px rgba(255, 177, 80, 0.65), 0 0 18px rgba(255, 133, 56, 0.14)"
+                          : isIntelOnlySunkCell
+                            ? "inset 0 0 0 1px rgba(255, 202, 119, 0.22), 0 0 12px rgba(255, 202, 119, 0.08)"
                           : canShoot
                             ? "0 0 0 1px rgba(94,224,255,0.12), inset 0 0 12px rgba(94,224,255,0.06)"
                             : "none",
-                        animation,
+                        animation: animation === "none" ? undefined : animation,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
@@ -1352,6 +1516,7 @@ export default function BattleScreen({
               }}
             >
                 <div
+                  className={hasDefenseFlash ? "battle-board--impact" : ""}
                   style={{
                     display: "grid",
                   gridTemplateColumns: `18px repeat(${boardSize}, ${cellSize}px)`,
@@ -1366,7 +1531,6 @@ export default function BattleScreen({
                   sunkShipIndexes={you.sunkShipIndexes || []}
                   cellSize={cellSize}
                   gap={defenseGap}
-                  flashingSunkShipIndexes={flashingDefenseSunkShips}
                 />
                 <div />
                 {Array.from({ length: boardSize }).map((_, x) => (
@@ -1472,7 +1636,7 @@ export default function BattleScreen({
                         boxShadow: isSunk
                           ? "inset 0 0 0 2px rgba(255, 177, 80, 0.65), 0 0 18px rgba(255, 133, 56, 0.14)"
                           : "none",
-                        animation,
+                        animation: animation === "none" ? undefined : animation,
                       }}
                     >
                       {content || label}

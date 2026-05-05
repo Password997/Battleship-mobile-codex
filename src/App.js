@@ -12,11 +12,11 @@ const PLACEMENT_BOARD_ART_URL = "/assets/pllacement board.png";
 const FLEET_SPRITE_SOURCE_WIDTH = 1024;
 const FLEET_SPRITE_SOURCE_HEIGHT = 1536;
 const FLEET_ART_SPECS = [
-  { length: 5, x: 40, y: 35, width: 900, height: 255 },
-  { length: 4, x: 120, y: 405, width: 700, height: 180 },
-  { length: 3, x: 48, y: 665, width: 515, height: 145 },
-  { length: 3, x: 48, y: 665, width: 515, height: 145 },
-  { length: 2, x: 666, y: 668, width: 292, height: 116 },
+  { length: 5, x: 48, y: 105, width: 891, height: 165 },
+  { length: 4, x: 132, y: 412, width: 687, height: 121 },
+  { length: 3, x: 80, y: 665, width: 483, height: 115 },
+  { length: 3, x: 80, y: 665, width: 483, height: 115 },
+  { length: 2, x: 670, y: 680, width: 287, height: 85 },
 ];
 const FLEET_COUNTER_ART_SPECS = [
   { length: 5, x: 40, y: 32, width: 930, height: 255, sourceUrl: FLEET4_SPRITE_URL },
@@ -88,11 +88,47 @@ function getShipBounds(ship, cellSize, gap) {
   return { left, top, width, height, horizontal };
 }
 
+function getShipArtFrame(bounds, shipLength, cellSize) {
+  const axisPadding = shipLength === 5 ? cellSize * 0.42 : cellSize * 0.16;
+  const crossPadding = cellSize * 0.22;
+  const orientationOffsets = {
+    horizontal: {
+      5: { x: 0, y: -2 },
+      4: { x: 0, y: -1 },
+      3: { x: 0, y: -1 },
+      2: { x: 0, y: 0 },
+    },
+    vertical: {
+      5: { x: 0, y: 0 },
+      4: { x: 0, y: 0 },
+      3: { x: 0, y: 0 },
+      2: { x: 0, y: 0 },
+    },
+  };
+
+  const artWidth = bounds.horizontal
+    ? Math.max(bounds.width + axisPadding, cellSize * 1.45)
+    : Math.max(bounds.width + crossPadding, cellSize * 1.2);
+  const artHeight = bounds.horizontal
+    ? Math.max(bounds.height + crossPadding, cellSize * 1.2)
+    : Math.max(bounds.height + axisPadding, cellSize * 1.45);
+  const offset =
+    orientationOffsets[bounds.horizontal ? "horizontal" : "vertical"][shipLength] || { x: 0, y: 0 };
+
+  return {
+    width: artWidth,
+    height: artHeight,
+    left: bounds.left + (bounds.width - artWidth) / 2 + offset.x,
+    top: bounds.top + (bounds.height - artHeight) / 2 + offset.y,
+  };
+}
+
 function FleetSprite({
   spec,
   width,
   height,
   rotate = false,
+  fitRotated = false,
   dimmed = false,
   active = false,
 }) {
@@ -101,27 +137,45 @@ function FleetSprite({
   const sourceUrl = spec.sourceUrl || FLEET_SPRITE_URL;
   const sourceWidth = spec.sourceWidth || FLEET_SPRITE_SOURCE_WIDTH;
   const sourceHeight = spec.sourceHeight || FLEET_SPRITE_SOURCE_HEIGHT;
-  const scale = Math.min(width / spec.width, height / spec.height);
+  const scale = rotate && fitRotated
+    ? Math.min(width / spec.height, height / spec.width)
+    : Math.min(width / spec.width, height / spec.height);
   const renderWidth = spec.width * scale;
   const renderHeight = spec.height * scale;
+  const frameWidth = rotate ? width : renderWidth;
+  const frameHeight = rotate ? height : renderHeight;
 
   return (
     <div
       aria-hidden="true"
       style={{
-        width: renderWidth,
-        height: renderHeight,
-        backgroundImage: `url(${sourceUrl})`,
-        backgroundRepeat: "no-repeat",
-        backgroundSize: `${sourceWidth * scale}px ${sourceHeight * scale}px`,
-        backgroundPosition: `${-spec.x * scale}px ${-spec.y * scale}px`,
-        transform: rotate ? "rotate(90deg)" : "none",
-        transformOrigin: "center center",
-        filter: `${dimmed ? "saturate(0.45) brightness(0.6)" : "drop-shadow(0 8px 18px rgba(0,0,0,0.28))"} ${active ? "drop-shadow(0 0 18px rgba(95,224,255,0.28))" : ""}`.trim(),
-        opacity: dimmed ? 0.5 : 1,
+        width: frameWidth,
+        height: frameHeight,
+        position: "relative",
         pointerEvents: "none",
       }}
-    />
+    >
+      <div
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: "50%",
+          width: renderWidth,
+          height: renderHeight,
+          backgroundImage: `url(${sourceUrl})`,
+          backgroundRepeat: "no-repeat",
+          backgroundSize: `${sourceWidth * scale}px ${sourceHeight * scale}px`,
+          backgroundPosition: `${-spec.x * scale}px ${-spec.y * scale}px`,
+          transform: rotate
+            ? "translate(-50%, -50%) rotate(90deg)"
+            : "translate(-50%, -50%)",
+          transformOrigin: "center center",
+          filter: `${dimmed ? "saturate(0.45) brightness(0.6)" : "drop-shadow(0 8px 18px rgba(0,0,0,0.28))"} ${active ? "drop-shadow(0 0 18px rgba(95,224,255,0.28))" : ""}`.trim(),
+          opacity: dimmed ? 0.5 : 1,
+          pointerEvents: "none",
+        }}
+      />
+    </div>
   );
 }
 
@@ -130,24 +184,20 @@ function ShipSilhouettes({ ships, cellSize, gap, shipSpecs = FLEET_ART_SPECS }) 
     <>
       {(ships || []).map((ship, index) => {
         const bounds = getShipBounds(ship, cellSize, gap);
-        const spec = shipSpecs[index] || shipSpecs.find((item) => item.length === ship.length);
-        const artHeight = bounds.horizontal
-          ? Math.max(cellSize * 1.28, bounds.height + 10)
-          : Math.max(cellSize * 1.05, bounds.width + 10);
-        const artWidth = bounds.horizontal
-          ? Math.max(bounds.width + cellSize * 0.32, cellSize * 1.45)
-          : Math.max(bounds.height + cellSize * 0.32, cellSize * 1.45);
+        const spec = shipSpecs.find((item) => item.length === ship.length);
+        const frame = getShipArtFrame(bounds, ship.length, cellSize);
 
         return (
           <div
             key={`placed-ship-shape-${index}`}
+            className="ship-bob"
             aria-hidden="true"
             style={{
               position: "absolute",
-              left: bounds.left + (bounds.width - artWidth) / 2,
-              top: bounds.top + (bounds.height - artHeight) / 2,
-              width: artWidth,
-              height: artHeight,
+              left: frame.left,
+              top: frame.top,
+              width: frame.width,
+              height: frame.height,
               display: "grid",
               placeItems: "center",
               pointerEvents: "none",
@@ -156,9 +206,10 @@ function ShipSilhouettes({ ships, cellSize, gap, shipSpecs = FLEET_ART_SPECS }) 
           >
             <FleetSprite
               spec={spec}
-              width={artWidth}
-              height={artHeight}
+              width={frame.width}
+              height={frame.height}
               rotate={!bounds.horizontal}
+              fitRotated={!bounds.horizontal}
             />
           </div>
         );
@@ -258,59 +309,113 @@ function FleetCounter({ shipLengths, placedCount, currentIndex }) {
       style={{
         marginTop: 12,
         display: "grid",
-        gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
-        gap: isMobile ? 3 : 4,
+        gridTemplateColumns: isMobile ? "1fr" : "repeat(5, minmax(0, 1fr))",
+        gap: 8,
         alignItems: "stretch",
       }}
     >
       {shipLengths.map((length, index) => {
         const isPlaced = index < placedCount;
         const isCurrent = index === currentIndex;
-        const spec =
-          FLEET_COUNTER_ART_SPECS[index] ||
-          FLEET_COUNTER_ART_SPECS.find((item) => item.length === length);
+        const status = isPlaced ? "SET" : isCurrent ? "NEXT" : "WAIT";
 
         return (
           <div
             key={`${length}-${index}`}
             style={{
               display: "grid",
-              justifyItems: "center",
-              alignContent: "start",
-              gap: isMobile ? 3 : 4,
-              padding: isMobile ? "4px 1px 6px" : "6px 2px 8px",
-              borderRadius: 10,
+              gridTemplateColumns: isMobile ? "auto 1fr auto" : "1fr",
+              alignItems: "center",
+              gap: 8,
+              padding: isMobile ? "9px 10px" : "10px 9px",
+              borderRadius: 12,
               background: isCurrent
-                ? "linear-gradient(180deg, rgba(10,42,61,0.92), rgba(6,21,34,0.88))"
+                ? "linear-gradient(180deg, rgba(10,55,76,0.96), rgba(6,24,38,0.92))"
                 : "rgba(5,18,31,0.68)",
               border: isCurrent
-                ? "1px solid rgba(95,224,255,0.28)"
-                : "1px solid rgba(95,224,255,0.1)",
+                ? "1px solid rgba(95,224,255,0.42)"
+                : isPlaced
+                  ? "1px solid rgba(255,176,111,0.28)"
+                  : "1px solid rgba(95,224,255,0.1)",
               color: isPlaced ? "#ffd0b0" : isCurrent ? "#a5f0ff" : "#6f97ab",
               fontWeight: isCurrent ? 900 : 700,
-              minHeight: isMobile ? 114 : 130,
+              minHeight: isMobile ? 0 : 82,
+              boxShadow: isCurrent
+                ? "0 0 0 1px rgba(95,224,255,0.08), 0 10px 18px rgba(0,0,0,0.18)"
+                : "none",
             }}
           >
             <div
               style={{
-                width: "100%",
-                minHeight: isMobile ? 92 : 104,
                 display: "grid",
                 placeItems: "center",
-                overflow: "visible",
+                width: 32,
+                height: 32,
+                justifySelf: isMobile ? "auto" : "center",
+                borderRadius: 10,
+                background: isPlaced
+                  ? "rgba(255,176,111,0.16)"
+                  : isCurrent
+                    ? "rgba(95,224,255,0.18)"
+                    : "rgba(95,224,255,0.06)",
+                color: isPlaced ? "#ffd0b0" : isCurrent ? "#eaffff" : "#87a9b8",
+                fontSize: 16,
+                fontWeight: 900,
+                lineHeight: 1,
               }}
             >
-              <FleetSprite
-                spec={spec}
-                width={Math.min(isMobile ? 112 : 130, 56 + length * (isMobile ? 12 : 14))}
-                height={isMobile ? 36 : 40}
-                rotate
-                dimmed={!isPlaced && !isCurrent}
-                active={isCurrent}
-              />
-            </div>
-            <span style={{ fontSize: isMobile ? 13 : 14, lineHeight: 1 }}>
               {length}
+            </div>
+            <div
+              style={{
+                display: "grid",
+                gap: 5,
+                minWidth: 0,
+              }}
+            >
+              <div
+                style={{
+                  height: 5,
+                  borderRadius: 999,
+                  background: "rgba(95,224,255,0.08)",
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    width: `${Math.min(100, length * 18)}%`,
+                    height: "100%",
+                    borderRadius: 999,
+                    background: isPlaced
+                      ? "linear-gradient(90deg, #ffb06f, #ffe0bd)"
+                      : isCurrent
+                        ? "linear-gradient(90deg, #5fe0ff, #b8f6ff)"
+                        : "rgba(116,150,166,0.5)",
+                  }}
+                />
+              </div>
+              <div
+                style={{
+                  display: isMobile ? "block" : "none",
+                  color: "#83b0c8",
+                  fontSize: 11,
+                  fontWeight: 800,
+                  letterSpacing: "0.08em",
+                }}
+              >
+                Length {length}
+              </div>
+            </div>
+            <span
+              style={{
+                justifySelf: isMobile ? "end" : "center",
+                fontSize: 10,
+                lineHeight: 1,
+                letterSpacing: "0.12em",
+                color: isPlaced ? "#ffd0b0" : isCurrent ? "#8ff0ff" : "#6f97ab",
+              }}
+            >
+              {status}
             </span>
           </div>
         );
@@ -446,6 +551,16 @@ export default function App() {
       ""
     );
   }, [roomView, activeRoomCode, roomCodeInput]);
+
+  useEffect(() => {
+    if (activeRoomCode || roomView) return;
+
+    const timer = setTimeout(() => {
+      initialsInputRefs.current[0]?.focus();
+    }, 80);
+
+    return () => clearTimeout(timer);
+  }, [activeRoomCode, roomView]);
 
   const showConnectionNotice = useCallback((message, autoHide = false) => {
     if (connectionNoticeTimerRef.current) {
@@ -1592,6 +1707,7 @@ export default function App() {
 
     return (
       <div
+        className="screen-shell"
         style={{
           minHeight: "100vh",
           background: "#020913",
@@ -1619,9 +1735,13 @@ export default function App() {
             backgroundSize: isMobile ? "94%" : "74%",
             backgroundPosition: isMobile ? "center 20px" : "center -48px",
             backgroundRepeat: "no-repeat",
-            boxShadow: "0 0 0 1px rgba(87,216,255,0.08), 0 28px 80px rgba(0,0,0,0.45)",
-          }}
-        >
+          boxShadow: "0 0 0 1px rgba(87,216,255,0.08), 0 28px 80px rgba(0,0,0,0.45)",
+        }}
+      >
+          <div className="command-beacon" aria-hidden="true" />
+          <div className="tactical-sweep" aria-hidden="true" />
+          <div className="ocean-haze" aria-hidden="true" />
+          <div className="ambient-particles" aria-hidden="true" />
           <div
             style={{
               position: "absolute",
@@ -1926,6 +2046,7 @@ export default function App() {
 
     return (
       <div
+        className="screen-shell"
         style={{
           minHeight: "100vh",
           background:
@@ -1936,6 +2057,10 @@ export default function App() {
           fontFamily: "'Segoe UI', 'Trebuchet MS', Arial, sans-serif",
         }}
       >
+        <div className="command-beacon" aria-hidden="true" />
+        <div className="tactical-sweep" aria-hidden="true" />
+        <div className="ocean-haze" aria-hidden="true" />
+        <div className="ambient-particles" aria-hidden="true" />
         <style>
           {`
             .rotate-action-icon {
@@ -1958,6 +2083,7 @@ export default function App() {
           }}
         >
           <div
+            className="command-card"
             style={{
               ...cardStyle(),
               display: "flex",
@@ -2017,7 +2143,7 @@ export default function App() {
               alignItems: "start",
             }}
           >
-            <div style={cardStyle()}>
+            <div className="command-card" style={cardStyle()}>
               <div
                 style={{
                   display: "flex",
@@ -2145,7 +2271,7 @@ export default function App() {
               )}
             </div>
 
-            <div style={cardStyle()}>
+            <div className="command-card" style={cardStyle()}>
               <div style={{ fontSize: isMobile ? 20 : 22, fontWeight: 900, color: "#f4fbff" }}>
                 Board
               </div>
@@ -2157,6 +2283,8 @@ export default function App() {
 
               <div style={{ marginTop: 16, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
                 <div
+                  key={`placement-board-${placedShips.length}`}
+                  className={placedShips.length ? "placement-board--snap" : ""}
                   style={{
                     display: "grid",
                     gridTemplateColumns: `18px repeat(${BOARD_SIZE}, ${placementCellSize}px)`,

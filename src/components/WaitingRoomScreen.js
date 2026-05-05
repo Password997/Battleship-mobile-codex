@@ -49,6 +49,7 @@ export default function WaitingRoomScreen({
 
   return (
     <div
+      className="screen-shell"
       style={{
         minHeight: "100vh",
         background:
@@ -79,6 +80,10 @@ export default function WaitingRoomScreen({
           }
         `}
       </style>
+      <div className="command-beacon" aria-hidden="true" />
+      <div className="tactical-sweep" aria-hidden="true" />
+      <div className="ocean-haze" aria-hidden="true" />
+      <div className="ambient-particles" aria-hidden="true" />
       <div
         aria-hidden="true"
         style={{
@@ -114,6 +119,7 @@ export default function WaitingRoomScreen({
       />
       <div style={{ maxWidth: 900, margin: "0 auto", position: "relative", zIndex: 1 }}>
         <div
+          className="command-card"
           style={{
             background: "linear-gradient(180deg, rgba(8,31,51,0.97), rgba(4,18,31,0.96))",
             borderRadius: 22,
@@ -165,6 +171,7 @@ export default function WaitingRoomScreen({
               </div>
 
               <div
+                className="transmission-stamp"
                 style={{
                   marginTop: 6,
                   fontSize: "clamp(34px, 11vw, 60px)",
@@ -202,10 +209,12 @@ export default function WaitingRoomScreen({
               Connected {connectedCount} / {players.length}
             </div>
             <div
-              style={statStyle(
-                isLobby || allReady ? "#d1fae5" : "#fef3c7",
-                isLobby || allReady ? "#065f46" : "#92400e"
-              )}
+              className={!allReady ? "beacon-strip" : ""}
+              style={
+                !allReady
+                  ? statStyle("rgba(6, 42, 62, 0.95)", "#b9f5ff")
+                  : statStyle("#d1fae5", "#065f46")
+              }
             >
               {isLobby
                 ? players.length >= 2
