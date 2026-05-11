@@ -311,10 +311,21 @@ body {
 }
 
 .battle-cell--intel {
-  color: #ffd99b !important;
-  font-size: 10px !important;
-  letter-spacing: 0.08em;
-  text-shadow: 0 0 10px rgba(255, 202, 119, 0.28);
+  color: transparent !important;
+}
+
+.battle-cell--intel::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: rgba(255, 202, 119, 0.88);
+  box-shadow: 0 0 12px rgba(255, 202, 119, 0.26);
+  transform: translate(-50%, -50%) rotate(45deg);
+  pointer-events: none;
 }
 
 .sunk-ship-fire {

@@ -321,9 +321,9 @@ export default function BattleScreen({
 }) {
   const boardSize = roomView?.boardSize || 10;
   const isMobile = typeof window !== "undefined" ? window.innerWidth <= 768 : false;
-  const cellSize = isMobile ? 30 : 42;
-  const attackGap = isMobile ? 2 : 4;
-  const defenseGap = 2;
+  const cellSize = isMobile ? 29 : 38;
+  const attackGap = isMobile ? 2 : 3;
+  const defenseGap = isMobile ? 2 : 3;
 
   const players = roomView?.players || [];
   const you = roomView?.you || {
@@ -1145,14 +1145,11 @@ export default function BattleScreen({
             <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 900, color: "#f3fbff" }}>
               Enemy Board
             </div>
-            <div style={{ marginTop: 8, color: "#86b4ca", fontSize: isMobile ? 12 : 14 }}>
-              Cyan scans mark active targeting. Ember glow confirms heavy damage.
-            </div>
-
             <div
               style={{
-                marginTop: 14,
-                overflowX: "auto",
+                marginTop: 12,
+                overflowX: isMobile ? "auto" : "visible",
+                overflowY: "hidden",
                 WebkitOverflowScrolling: "touch",
               }}
             >
@@ -1294,7 +1291,7 @@ export default function BattleScreen({
 
                   if (isIntelOnlySunkCell) {
                     background = "linear-gradient(180deg, rgba(56,44,25,0.74), rgba(14,42,55,0.72))";
-                    label = "INTEL";
+                    label = "";
                   }
 
                   if (isSunkCell) {
@@ -1414,14 +1411,11 @@ export default function BattleScreen({
             <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 900, color: "#f3fbff" }}>
               Your Board
             </div>
-            <div style={{ marginTop: 8, color: "#86b4ca", fontSize: isMobile ? 12 : 14 }}>
-              Fleet silhouettes hold position while hits, misses and sunk states stay readable.
-            </div>
-
             <div
               style={{
-                marginTop: 14,
-                overflowX: "auto",
+                marginTop: 12,
+                overflowX: isMobile ? "auto" : "visible",
+                overflowY: "hidden",
                 WebkitOverflowScrolling: "touch",
               }}
             >
