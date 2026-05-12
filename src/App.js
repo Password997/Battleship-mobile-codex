@@ -532,6 +532,7 @@ export default function App() {
   });
   const [pendingShot, setPendingShot] = useState(null);
   const [placementHoverCell, setPlacementHoverCell] = useState(null);
+  const [rulesOpen, setRulesOpen] = useState(false);
 
   const prevRoomViewRef = useRef(null);
   const wasDisconnectedRef = useRef(!socket.connected);
@@ -1701,6 +1702,122 @@ export default function App() {
     </div>
   );
 
+  const renderRulesSheet = () => {
+    if (!rulesOpen) return null;
+
+    const rows = [
+      ["Goal", "Sink all enemy fleets and be the last player standing."],
+      ["Setup", "Place 5 ships: 5, 4, 3, 3 and 2 cells. Ships cannot overlap."],
+      ["Turns", "Fire at the Enemy Board. Miss ends your turn. Hit lets you fire again."],
+      ["Intel", "Amber diamond means a ship was revealed there, but you have not fired that cell yet."],
+      ["Win", "A player is out when all ships are sunk. Last fleet alive wins."],
+    ];
+    const icons = [
+      ["💧", "Miss"],
+      ["🔥", "Hit"],
+      ["💥", "Sunk"],
+      ["◆", "Intel"],
+    ];
+
+    return (
+      <div
+        role="dialog"
+        aria-modal="true"
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 120,
+          background: "rgba(1, 8, 14, 0.72)",
+          display: "grid",
+          placeItems: "end center",
+          padding: 14,
+          boxSizing: "border-box",
+        }}
+        onClick={() => setRulesOpen(false)}
+      >
+        <div
+          onClick={(event) => event.stopPropagation()}
+          style={{
+            width: "min(100%, 520px)",
+            maxHeight: "84vh",
+            overflowY: "auto",
+            borderRadius: 24,
+            border: "1px solid rgba(95,224,255,0.22)",
+            background: "linear-gradient(180deg, rgba(7,31,51,0.98), rgba(3,13,24,0.98))",
+            boxShadow: "0 24px 70px rgba(0,0,0,0.42)",
+            padding: 18,
+            color: "#e9f8ff",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+            <div>
+              <div style={{ color: "#63e6ff", fontSize: 11, fontWeight: 900, letterSpacing: "0.2em", textTransform: "uppercase" }}>
+                Quick Kit
+              </div>
+              <div style={{ marginTop: 4, fontSize: 24, fontWeight: 900 }}>
+                Rules
+              </div>
+            </div>
+            <button
+              onClick={() => setRulesOpen(false)}
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 14,
+                border: "1px solid rgba(95,224,255,0.18)",
+                background: "rgba(5,18,31,0.72)",
+                color: "#eefbff",
+                fontSize: 20,
+                fontWeight: 900,
+                cursor: "pointer",
+              }}
+            >
+              ×
+            </button>
+          </div>
+
+          <div style={{ marginTop: 16, display: "grid", gap: 9 }}>
+            {rows.map(([title, text]) => (
+              <div
+                key={title}
+                style={{
+                  borderRadius: 14,
+                  border: "1px solid rgba(95,224,255,0.12)",
+                  background: "rgba(4,18,31,0.62)",
+                  padding: "10px 12px",
+                }}
+              >
+                <div style={{ color: "#8eeeff", fontSize: 12, fontWeight: 900 }}>{title}</div>
+                <div style={{ marginTop: 4, color: "#cfefff", fontSize: 13, lineHeight: 1.35 }}>{text}</div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            {icons.map(([icon, meaning]) => (
+              <div
+                key={meaning}
+                style={{
+                  borderRadius: 14,
+                  border: "1px solid rgba(95,224,255,0.12)",
+                  background: "rgba(4,18,31,0.62)",
+                  padding: "10px 12px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  fontWeight: 900,
+                }}
+              >
+                <span style={{ color: meaning === "Intel" ? "#ffd99b" : "#ffffff", fontSize: 18 }}>{icon}</span>
+                <span>{meaning}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const renderHomeV2 = () => {
     const isMobile = typeof window !== "undefined" ? window.innerWidth <= 768 : false;
     const homeBackground = "/assets/31dabfeb-75ee-484d-96c9-32b44770dccb.png";
@@ -1949,26 +2066,54 @@ export default function App() {
                   ))}
                 </div>
 
-                <input
-                  value={roomCodeInput}
-                  onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase().slice(0, 4))}
-                  placeholder="ROOM CODE"
-                  maxLength={4}
+                <div
                   style={{
-                    width: "100%",
                     marginTop: 14,
-                    padding: "16px 18px",
-                    borderRadius: 18,
-                    border: "1px solid rgba(94,224,255,0.18)",
-                    background: "transparent",
-                    color: "#eefaff",
-                    fontSize: 18,
-                    boxSizing: "border-box",
-                    letterSpacing: 6,
-                    textTransform: "uppercase",
-                    outline: "none",
+                    display: "grid",
+                    gridTemplateColumns: "minmax(0, 1fr) 118px",
+                    gap: 10,
                   }}
-                />
+                >
+                  <input
+                    value={roomCodeInput}
+                    onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase().slice(0, 4))}
+                    placeholder="ROOM CODE"
+                    maxLength={4}
+                    style={{
+                      width: "100%",
+                      padding: "16px 18px",
+                      borderRadius: 18,
+                      border: "1px solid rgba(94,224,255,0.18)",
+                      background: "transparent",
+                      color: "#eefaff",
+                      fontSize: 18,
+                      boxSizing: "border-box",
+                      letterSpacing: 6,
+                      textTransform: "uppercase",
+                      outline: "none",
+                      minWidth: 0,
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setRulesOpen(true)}
+                    style={{
+                      border: "1px solid rgba(94,224,255,0.18)",
+                      borderRadius: 18,
+                      padding: "0 12px",
+                      background: "linear-gradient(180deg, rgba(8,43,66,0.18), rgba(4,20,34,0.24))",
+                      color: "#eefaff",
+                      fontSize: 13,
+                      fontWeight: 900,
+                      letterSpacing: "0.06em",
+                      textTransform: "uppercase",
+                      cursor: "pointer",
+                      boxShadow: "0 14px 26px rgba(0,0,0,0.18)",
+                    }}
+                  >
+                    Rules
+                  </button>
+                </div>
 
                 <div
                   style={{
@@ -2035,6 +2180,7 @@ export default function App() {
             </div>
           </div>
         </div>
+        {renderRulesSheet()}
       </div>
     );
   };
