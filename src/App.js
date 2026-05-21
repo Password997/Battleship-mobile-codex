@@ -273,7 +273,9 @@ function PlacementActionButton({
         cursor: "pointer",
         display: "inline-flex",
         alignItems: "center",
+        justifyContent: "center",
         gap: 7,
+        width: "100%",
         boxShadow: "0 12px 24px rgba(0,0,0,0.22)",
       }}
     >
@@ -2289,71 +2291,28 @@ export default function App() {
               alignItems: "start",
             }}
           >
-            <div className="command-card" style={cardStyle()}>
+            <div
+              className={isMobile ? "" : "command-card"}
+              style={{
+                ...(isMobile
+                  ? {
+                      order: 2,
+                      padding: 0,
+                      background: "transparent",
+                      border: "none",
+                      boxShadow: "none",
+                    }
+                  : { ...cardStyle(), order: 1 }),
+              }}
+            >
               <div
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "baseline",
-                  gap: 12,
-                  flexWrap: "wrap",
-                }}
-              >
-                <div style={{ fontSize: isMobile ? 20 : 22, fontWeight: 900, color: "#f4fbff" }}>
-                  Fleet
-                </div>
-                <div style={{ fontSize: isMobile ? 15 : 17, fontWeight: 800, color: "#68e2ff" }}>
-                  {currentShipLength
-                    ? `Ship ${placedShips.length + 1} of ${SHIP_LENGTHS.length} - length ${currentShipLength}`
-                    : "Fleet complete"}
-                </div>
-              </div>
-
-              <div style={{ marginTop: 8, color: "#83b0c8", lineHeight: 1.55, fontSize: isMobile ? 13 : 15 }}>
-                {currentShipLength
-                  ? `Place ship of length ${currentShipLength}.`
-                  : "All ships placed. Ready to battle."}
-              </div>
-
-              <FleetCounter
-                shipLengths={SHIP_LENGTHS}
-                placedCount={placedShips.length}
-                currentIndex={placedShips.length}
-              />
-
-              <div
-                style={{
-                  marginTop: 16,
                   display: "grid",
-                  gridTemplateColumns: isMobile ? "1fr" : "repeat(3, minmax(0, 1fr))",
+                  gridTemplateColumns: isMobile ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, auto))",
                   gap: 10,
+                  alignItems: "stretch",
                 }}
               >
-                {[
-                  ["Orientation", orientation === "horizontal" ? "Horizontal" : "Vertical"],
-                  ["Placed", `${placedShips.length}/${SHIP_LENGTHS.length}`],
-                  ["Status", placementComplete ? "Ready to deploy" : "Awaiting placement"],
-                ].map(([label, value]) => (
-                  <div
-                    key={label}
-                    style={{
-                      borderRadius: 16,
-                      padding: "12px 14px",
-                      background: "rgba(5, 19, 31, 0.7)",
-                      border: "1px solid rgba(95,224,255,0.12)",
-                    }}
-                  >
-                    <div style={{ color: "#6edfff", fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase" }}>
-                      {label}
-                    </div>
-                    <div style={{ marginTop: 6, color: "#f4fbff", fontSize: 14, fontWeight: 800 }}>
-                      {value}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div style={{ marginTop: 16, display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <PlacementActionButton
                   onClick={handleRotateShip}
                   icon="🔄"
@@ -2389,6 +2348,7 @@ export default function App() {
                     padding: "12px 16px",
                     fontWeight: 800,
                     letterSpacing: "0.06em",
+                    width: "100%",
                     cursor: placementComplete ? "pointer" : "default",
                     boxShadow: placementComplete
                       ? "0 0 0 1px rgba(255,164,104,0.24), 0 16px 26px rgba(0,0,0,0.28)"
@@ -2417,17 +2377,26 @@ export default function App() {
               )}
             </div>
 
-            <div className="command-card" style={cardStyle()}>
-              <div style={{ fontSize: isMobile ? 20 : 22, fontWeight: 900, color: "#f4fbff" }}>
-                Board
-              </div>
-              <div style={{ marginTop: 8, color: "#83b0c8", fontSize: isMobile ? 12 : 14 }}>
-                {isMobile
-                  ? "Tap to preview, tap again to place. Ships cannot overlap."
-                  : "Hover to preview. Ships cannot overlap."}
-              </div>
+            <div
+              className="command-card"
+              style={{
+                ...cardStyle(),
+                order: isMobile ? 1 : 2,
+                padding: isMobile ? 10 : 20,
+              }}
+            >
+              {!isMobile && (
+                <>
+                  <div style={{ fontSize: 22, fontWeight: 900, color: "#f4fbff" }}>
+                    Board
+                  </div>
+                  <div style={{ marginTop: 8, color: "#83b0c8", fontSize: 14 }}>
+                    Hover to preview. Ships cannot overlap.
+                  </div>
+                </>
+              )}
 
-              <div style={{ marginTop: 16, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+              <div style={{ marginTop: isMobile ? 0 : 16, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
                 <div
                   key={`placement-board-${placedShips.length}`}
                   className={placedShips.length ? "placement-board--snap" : ""}

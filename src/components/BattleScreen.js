@@ -339,7 +339,7 @@ export default function BattleScreen({
 
   const [winnerOpen, setWinnerOpen] = useState(true);
   const [eliminatedOpen, setEliminatedOpen] = useState(true);
-  const [activeMobileBoard, setActiveMobileBoard] = useState("attack");
+  const [activeMobileBoard, setActiveMobileBoard] = useState("ships");
   const resolvedWinnerName =
     roomView?.winnerName ||
     players.find((player) => !player.defeated)?.name ||
@@ -358,8 +358,8 @@ export default function BattleScreen({
   }, [you?.defeated]);
 
   useEffect(() => {
-    if (isMobile && roomView?.status === "battle" && roomView?.isYourTurn) {
-      setActiveMobileBoard("attack");
+    if (isMobile && roomView?.status === "battle") {
+      setActiveMobileBoard(roomView?.isYourTurn ? "attack" : "ships");
     }
   }, [isMobile, roomView?.isYourTurn, roomView?.status]);
 
@@ -392,9 +392,13 @@ export default function BattleScreen({
     () => buildSunkCellSet(you.ships || [], you.sunkShipIndexes || []),
     [you.ships, you.sunkShipIndexes]
   );
+  const visibleRevealedSunkShips = useMemo(
+    () => (you.revealedSunkShipCells || []).filter((ship) => ship.playerId !== you.id),
+    [you.id, you.revealedSunkShipCells]
+  );
   const revealedSunkEnemyCells = useMemo(
-    () => buildRevealedSunkEnemyCells(you.revealedSunkShipCells || []),
-    [you.revealedSunkShipCells]
+    () => buildRevealedSunkEnemyCells(visibleRevealedSunkShips),
+    [visibleRevealedSunkShips]
   );
   const aliveCount = players.filter((p) => !p.defeated).length;
   const defeatedCount = players.filter((p) => p.defeated).length;
@@ -1221,7 +1225,7 @@ export default function BattleScreen({
                   </div>
                 )}
                 <ShipSilhouettes
-                  ships={you.revealedSunkShipCells || []}
+                  ships={visibleRevealedSunkShips}
                   cellSize={cellSize}
                   gap={attackGap}
                   allSunk

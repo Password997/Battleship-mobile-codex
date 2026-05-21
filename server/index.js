@@ -217,6 +217,7 @@ function revealSunkShip(room, sunkShip) {
   for (const playerId of room.order) {
     const player = room.players[playerId];
     if (!player) continue;
+    if (player.id === sunkShip.playerId) continue;
 
     const alreadyRevealed = player.revealedSunkShipCells.some((revealed) => {
       return (

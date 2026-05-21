@@ -3,3 +3,5 @@ build/
 .env
 .env.local
 npm-debug.log*
+build-codex-check*/
+server-run*.log
